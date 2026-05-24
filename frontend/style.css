@@ -1,0 +1,160 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #0b1020;
+  color: #e5e7eb;
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 280px;
+  background: #111827;
+  border-right: 1px solid #1f2937;
+  padding: 24px;
+}
+
+.brand {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: #0f172a;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card h3 {
+  margin: 0 0 12px 0;
+  color: #93c5fd;
+  font-size: 15px;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #1f2937;
+  background: #111827;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #052e16;
+  border: 1px solid #14532d;
+  color: #86efac;
+}
+
+.chat {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message {
+  max-width: 780px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  line-height: 1.5;
+  border: 1px solid #1f2937;
+  white-space: pre-wrap;
+}
+
+.message.ai {
+  background: #111827;
+  align-self: flex-start;
+}
+
+.message.user {
+  background: #1d4ed8;
+  border-color: #2563eb;
+  color: #eff6ff;
+  align-self: flex-end;
+}
+
+.composer {
+  padding: 20px 24px;
+  border-top: 1px solid #1f2937;
+  background: #0f172a;
+}
+
+.composer-box {
+  display: flex;
+  gap: 12px;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 18px;
+  padding: 12px;
+}
+
+textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #f9fafb;
+  resize: none;
+  height: 64px;
+  font-size: 15px;
+  outline: none;
+}
+
+button {
+  border: none;
+  border-radius: 14px;
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 700;
+  padding: 0 20px;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px;
+  background: #1e293b;
+  color: #e5e7eb;
+}
+
+@media (max-width: 900px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #1f2937;
+  }
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aethra</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">Aethra</div>
+    <div class="subtitle">Sua GenAI local e personalizada</div>
+
+    <div class="card">
+      <h3>API</h3>
+      <p><strong>Status:</strong> <span id="api-status">Verificando...</span></p>
+      <p><strong>Modelo chat:</strong> <span id="chat-model">-</span></p>
+      <p><strong>Modelo visão:</strong> <span id="vision-model">-</span></p>
+    </div>
+
+    <div class="card">
+      <h3>Ações rápidas</h3>
+      <button class="secondary-btn" onclick="verificarStatus()">Atualizar status</button>
+      <button class="secondary-btn" onclick="limparChat()">Limpar chat</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1>Painel da Aethra</h1>
+      <div class="badge">Local</div>
+    </header>
+
+    <section class="chat" id="chat">
+      <div class="message ai">
+        Olá. Eu sou a Aethra. Seu backend está separado do frontend, como manda a boa engenharia.
+      </div>
+    </section>
+
+    <footer class="composer">
+      <div class="composer-box">
+        <textarea id="prompt" placeholder="Digite sua pergunta..."></textarea>
+        <button onclick="enviarMensagem()">Enviar</button>
+      </div>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
