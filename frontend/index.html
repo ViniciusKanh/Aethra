@@ -3,48 +3,342 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aethra</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#070b18" />
+  <title>Aethra | GenAI Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=20260524" />
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand">Aethra</div>
-    <div class="subtitle">Sua GenAI local e personalizada</div>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-    <div class="card">
-      <h3>API</h3>
-      <p><strong>Status:</strong> <span id="api-status">Verificando...</span></p>
-      <p><strong>Modelo chat:</strong> <span id="chat-model">-</span></p>
-      <p><strong>Modelo visão:</strong> <span id="vision-model">-</span></p>
+  <header class="navbar">
+    <a class="brand" href="#" aria-label="Aethra Home">
+      <span class="brand-mark" aria-hidden="true">
+        <span></span>
+      </span>
+      <span>
+        <strong>Aethra</strong>
+        <small>GenAI Workspace</small>
+      </span>
+    </a>
+
+    <div class="nav-actions">
+      <span id="header-provider" class="chip">Provider: --</span>
+      <div id="header-status" class="status-pill waiting">
+        <span class="status-dot"></span>
+        <span>Conectando</span>
+      </div>
+      <button id="refresh-status" class="icon-button" type="button" aria-label="Atualizar status" title="Atualizar status">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 11a8.1 8.1 0 0 0-14-5.3L4 8m0 0V3m0 5h5M4 13a8.1 8.1 0 0 0 14 5.3L20 16m0 0v5m0-5h-5" />
+        </svg>
+      </button>
     </div>
+  </header>
 
-    <div class="card">
-      <h3>Ações rápidas</h3>
-      <button class="secondary-btn" onclick="verificarStatus()">Atualizar status</button>
-      <button class="secondary-btn" onclick="limparChat()">Limpar chat</button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar">
-      <h1>Painel da Aethra</h1>
-      <div class="badge">Local</div>
-    </header>
-
-    <section class="chat" id="chat">
-      <div class="message ai">
-        Olá. Eu sou a Aethra. Seu backend está separado do frontend, como manda a boa engenharia.
+  <main class="page">
+    <section class="hero" aria-label="Apresentacao">
+      <div class="hero-content">
+        <div class="eyebrow">
+          <span></span>
+          Inteligencia generativa por API
+        </div>
+        <h1>Uma central inteligente para <span>texto, suporte e visao.</span></h1>
+        <p>
+          Experimente todas as capacidades da Aethra em um painel unico:
+          converse com o modelo, resuma e-mails ou tickets e analise imagens.
+        </p>
+        <div class="hero-actions">
+          <button class="primary-button" type="button" data-open-tab="summary">
+            Resumir um e-mail
+            <svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+          </button>
+          <button class="secondary-button" type="button" data-open-tab="integration">
+            Ver integracao
+          </button>
+        </div>
+      </div>
+      <div class="hero-art" role="img" aria-label="Fluxos luminosos representando inteligencia artificial">
+        <div class="hero-orb">
+          <span class="pulse pulse-one"></span>
+          <span class="pulse pulse-two"></span>
+        </div>
       </div>
     </section>
 
-    <footer class="composer">
-      <div class="composer-box">
-        <textarea id="prompt" placeholder="Digite sua pergunta..."></textarea>
-        <button onclick="enviarMensagem()">Enviar</button>
-      </div>
-    </footer>
+    <section class="metric-grid" aria-label="Capacidades">
+      <article class="metric-card">
+        <span class="metric-icon cyan">
+          <svg viewBox="0 0 24 24"><path d="M4 5h16v11H7l-3 3V5Zm4 5h8M8 13h5" /></svg>
+        </span>
+        <div>
+          <strong>Chat</strong>
+          <p>Geracao textual</p>
+        </div>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon purple">
+          <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6V3Zm3 8h6m-6 4h6m-6-8h3" /></svg>
+        </span>
+        <div>
+          <strong>Resumo</strong>
+          <p>E-mails, NPS e tickets</p>
+        </div>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon green">
+          <svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6Zm9-2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" /></svg>
+        </span>
+        <div>
+          <strong>Vision</strong>
+          <p>Imagem multimodal</p>
+        </div>
+      </article>
+      <article class="metric-card runtime">
+        <div class="metric-data">
+          <small>Ultima execucao</small>
+          <strong id="last-latency">--</strong>
+          <span id="last-model">Aguardando chamada</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="studio">
+      <aside class="connection-card" aria-label="Configuracao da API">
+        <div class="section-heading">
+          <div>
+            <p class="label">Conexao</p>
+            <h2>API Aethra</h2>
+          </div>
+          <span class="lock-badge">
+            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3m-11 0h12v10H6V11Z" /></svg>
+            Seguro
+          </span>
+        </div>
+
+        <label class="input-label" for="api-url">URL da API</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" /></svg>
+          <input id="api-url" type="url" value="http://localhost:8080" placeholder="https://sua-url.ngrok-free.dev" />
+        </div>
+
+        <label class="input-label" for="api-key">X-API-Key</label>
+        <div class="input-wrap password">
+          <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3m-11 0h12v10H6V11Z" /></svg>
+          <input id="api-key" type="password" autocomplete="off" placeholder="Obrigatoria em producao" />
+          <button id="toggle-key" class="peek" type="button" aria-label="Mostrar ou ocultar chave">Ver</button>
+        </div>
+
+        <label class="checkbox-row">
+          <input id="ngrok-header" type="checkbox" />
+          <span>Enviar header auxiliar do ngrok</span>
+        </label>
+
+        <div class="connection-actions">
+          <button id="save-connection" class="primary-button compact" type="button">Aplicar</button>
+          <button id="test-connection" class="ghost-button" type="button">Testar</button>
+        </div>
+
+        <div class="provider-card">
+          <div class="provider-line">
+            <span>Status</span>
+            <strong id="api-status">Nao verificado</strong>
+          </div>
+          <div class="provider-line">
+            <span>Chat</span>
+            <strong id="chat-model">--</strong>
+          </div>
+          <div class="provider-line">
+            <span>Vision</span>
+            <strong id="vision-model">--</strong>
+          </div>
+        </div>
+
+        <p class="security-note">
+          Para demonstracao, a chave fica somente nesta sessao do navegador.
+          Nao publique uma pagina contendo chave de producao.
+        </p>
+      </aside>
+
+      <section class="playground">
+        <nav class="tabs" aria-label="Recursos da Aethra">
+          <button class="tab active" type="button" data-tab="chat">
+            <svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3V5Z" /></svg>
+            Chat
+          </button>
+          <button class="tab" type="button" data-tab="summary">
+            <svg viewBox="0 0 24 24"><path d="M7 3h8l3 3v15H7V3Zm3 8h5m-5 4h5" /></svg>
+            Resumo
+          </button>
+          <button class="tab" type="button" data-tab="vision">
+            <svg viewBox="0 0 24 24"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6Zm9-2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" /></svg>
+            Vision
+          </button>
+          <button class="tab" type="button" data-tab="integration">
+            <svg viewBox="0 0 24 24"><path d="m8 9-4 3 4 3m8-6 4 3-4 3m-3-9-2 12" /></svg>
+            Integracao
+          </button>
+        </nav>
+
+        <section id="panel-chat" class="tab-panel active" data-panel="chat">
+          <div class="panel-header">
+            <div>
+              <p class="label">POST /chat</p>
+              <h2>Converse com a Aethra</h2>
+            </div>
+            <button id="clear-chat" class="ghost-button small" type="button">Limpar</button>
+          </div>
+
+          <div id="chat-messages" class="chat-messages" aria-live="polite">
+            <article class="bubble assistant">
+              <span class="bubble-avatar">A</span>
+              <div>
+                <small>Aethra</small>
+                <p>Ola. Posso responder perguntas, explicar informacoes e ajudar na analise de dados textuais.</p>
+              </div>
+            </article>
+          </div>
+
+          <form id="chat-form" class="composer">
+            <details class="advanced">
+              <summary>Ajustes avancados</summary>
+              <div class="advanced-grid">
+                <label>
+                  Prompt de sistema
+                  <textarea id="system-prompt" rows="2">Voce e um assistente tecnico, objetivo e util. Responda em portugues do Brasil.</textarea>
+                </label>
+                <label>
+                  Temperatura <output id="temperature-value">0.2</output>
+                  <input id="temperature" type="range" min="0" max="2" value="0.2" step="0.1" />
+                </label>
+              </div>
+            </details>
+            <div class="compose-row">
+              <textarea id="chat-prompt" rows="2" required placeholder="Pergunte algo para a Aethra..."></textarea>
+              <button id="chat-submit" class="send-button" type="submit" aria-label="Enviar mensagem">
+                <svg viewBox="0 0 24 24"><path d="m21 3-9 18-2-8-8-2 19-8ZM10 13l4-4" /></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section id="panel-summary" class="tab-panel" data-panel="summary">
+          <div class="panel-header">
+            <div>
+              <p class="label">POST /summarize</p>
+              <h2>Resumo inteligente</h2>
+            </div>
+            <select id="summary-preset" class="preset" aria-label="Tipo de resumo">
+              <option value="email">E-mail</option>
+              <option value="ticket">Ticket</option>
+              <option value="nps">NPS</option>
+              <option value="executive">Executivo</option>
+            </select>
+          </div>
+
+          <div class="two-columns">
+            <form id="summary-form" class="tool-form">
+              <div class="field-top">
+                <label for="summary-text">Conteudo para analisar</label>
+                <button id="load-sample" class="text-button" type="button">Carregar exemplo</button>
+              </div>
+              <textarea id="summary-text" rows="11" required placeholder="Cole aqui o corpo do e-mail, ticket ou feedback de NPS..."></textarea>
+              <div class="text-counter"><span id="summary-count">0</span> caracteres</div>
+              <label for="summary-instructions">Instrucoes</label>
+              <textarea id="summary-instructions" rows="3">Resuma este e-mail, identifique o problema principal, a prioridade e a proxima acao recomendada.</textarea>
+              <button id="summary-submit" class="primary-button full" type="submit">
+                Gerar resumo
+              </button>
+            </form>
+
+            <div class="result-card">
+              <div class="result-header">
+                <span>Resultado</span>
+                <button class="text-button copy-result" type="button" data-copy="summary-output">Copiar</button>
+              </div>
+              <div id="summary-output" class="result-output placeholder">
+                O resumo gerado aparecera aqui.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-vision" class="tab-panel" data-panel="vision">
+          <div class="panel-header">
+            <div>
+              <p class="label">POST /vision</p>
+              <h2>Analise visual</h2>
+            </div>
+            <span class="model-pill">Modelo: <strong id="vision-panel-model">--</strong></span>
+          </div>
+
+          <div class="two-columns vision-layout">
+            <form id="vision-form" class="tool-form">
+              <label id="drop-zone" class="upload-zone" for="vision-file">
+                <input id="vision-file" type="file" accept="image/png,image/jpeg,image/webp" />
+                <img id="vision-preview" alt="Pre-visualizacao da imagem selecionada" hidden />
+                <span id="upload-copy">
+                  <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v4h16v-4" /></svg>
+                  <strong>Arraste uma imagem</strong>
+                  <small>ou clique para selecionar PNG, JPG ou WebP</small>
+                </span>
+              </label>
+              <label for="vision-prompt">Pergunta sobre a imagem</label>
+              <textarea id="vision-prompt" rows="3">Descreva a imagem e identifique os elementos principais.</textarea>
+              <button id="vision-submit" class="primary-button full" type="submit" disabled>
+                Analisar imagem
+              </button>
+            </form>
+
+            <div class="result-card">
+              <div class="result-header">
+                <span>Interpretacao</span>
+                <button class="text-button copy-result" type="button" data-copy="vision-output">Copiar</button>
+              </div>
+              <div id="vision-output" class="result-output placeholder">
+                Selecione uma imagem para iniciar a analise multimodal.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-integration" class="tab-panel" data-panel="integration">
+          <div class="panel-header">
+            <div>
+              <p class="label">API-first</p>
+              <h2>Integracao com terceiros</h2>
+            </div>
+          </div>
+
+          <p class="integration-intro">
+            Sistemas externos devem consumir a Aethra pelo backend, enviando a
+            chave em <code>X-API-Key</code>. Nunca exponha a chave em um
+            frontend publicado.
+          </p>
+
+          <div class="endpoint-list">
+            <div><span class="method get">GET</span><code>/health</code><small>Status publico</small></div>
+            <div><span class="method post">POST</span><code>/chat</code><small>Geracao textual</small></div>
+            <div><span class="method post">POST</span><code>/summarize</code><small>Resumo de textos</small></div>
+            <div><span class="method post">POST</span><code>/vision</code><small>Imagem base64</small></div>
+          </div>
+
+          <div class="snippet-card">
+            <div class="result-header">
+              <span>Exemplo PowerShell</span>
+              <button class="text-button copy-result" type="button" data-copy="integration-code">Copiar</button>
+            </div>
+            <pre><code id="integration-code"></code></pre>
+          </div>
+        </section>
+      </section>
+    </section>
   </main>
 
-  <script src="script.js"></script>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="script.js?v=20260524"></script>
 </body>
 </html>
