@@ -165,6 +165,37 @@ Em producao, `/chat`, `/summarize` e `/vision` retornam `401` quando
 monitoramento. Com `ENABLE_DOCS=false`, `/docs` e `/openapi.json` nao ficam
 publicos.
 
+### Sem dominio proprio
+
+Para um piloto externo ou baixo volume, e possivel publicar a Aethra sem
+comprar dominio, usando uma URL HTTPS fornecida por um servico de tunel.
+Continue mantendo a autenticacao `X-API-Key` da Aethra habilitada.
+
+Com `ngrok`, o plano gratuito fornece um dominio de desenvolvimento atribuido
+a conta. Instale o agente no Windows, cadastre o authtoken obtido no painel e
+encaminhe a API local:
+
+```powershell
+ngrok config add-authtoken "<AUTHTOKEN_DO_NGROK>"
+ngrok http 8080
+```
+
+Use a URL HTTPS exibida pelo ngrok, por exemplo
+`https://<dominio-atribuido>.ngrok-free.app/summarize`, como endpoint do
+sistema terceiro. O plano gratuito possui limites de uso e e adequado para
+validacao ou operacao pequena, nao para SLA corporativo.
+
+Como alternativa, o `Tailscale Funnel` fornece uma URL publica HTTPS
+`*.ts.net` e encaminha para a API local:
+
+```powershell
+tailscale funnel --bg 8080
+tailscale funnel status
+```
+
+O Funnel esta em beta; use-o para piloto ou integracoes controladas, nao como
+substituto de infraestrutura com disponibilidade contratual.
+
 ## Executar
 
 O vLLM nao tem suporte nativo oficial a Windows. Em uma instalacao oficial
