@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.py[cod]
+
+# Segredos locais e de producao nao devem ser versionados.
+backend/.env
+deployment/.env.production

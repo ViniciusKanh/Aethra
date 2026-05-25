@@ -1,0 +1,6 @@
+# Troque api.exemplo.com.br por um dominio que aponte para este servidor.
+# O Caddy solicita e renova automaticamente o certificado HTTPS.
+api.exemplo.com.br {
+    encode gzip
+    reverse_proxy 127.0.0.1:8080
+}

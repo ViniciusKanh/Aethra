@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8080";
 
 function adicionarMensagem(tipo, texto) {
   const chat = document.getElementById("chat");
@@ -26,7 +26,7 @@ async function verificarStatus() {
     const resposta = await fetch(`${API_BASE_URL}/health`);
     const dados = await resposta.json();
 
-    statusEl.textContent = `${dados.status} | Ollama: ${dados.ollama}`;
+    statusEl.textContent = `${dados.status} | ${dados.provider || "provider"}: ${dados.provider_status || dados.ollama}`;
     chatModelEl.textContent = dados.default_chat_model;
     visionModelEl.textContent = dados.default_vision_model;
   } catch (erro) {
