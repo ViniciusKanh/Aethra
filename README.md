@@ -1,10 +1,93 @@
+<div align="center">
+
 # Aethra
 
-API FastAPI para chat, resumo e visao, com provider desacoplado. O provider
-padrao e o servidor OpenAI-compatible do vLLM; o adapter Ollama permanece
-disponivel por configuracao.
+### API de GenAI para transformar textos, e-mails, tickets, feedbacks e imagens em respostas úteis
 
-## Estrutura
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-black)](https://ollama.com/)
+[![vLLM](https://img.shields.io/badge/vLLM-Ready-4C6EF5)](https://docs.vllm.ai/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**Aethra** é uma camada de serviços de Inteligência Artificial Generativa
+construída com FastAPI. Ela disponibiliza endpoints HTTP para chat,
+sumarização e análise multimodal, desacoplando os sistemas consumidores do
+motor de inferência utilizado.
+
+</div>
+
+---
+
+## Visão Geral
+
+Aethra foi projetada para integrar recursos de GenAI a outros sistemas por
+meio de uma API simples e configurável.
+
+Casos de uso suportados:
+
+- Resumo e priorização de e-mails.
+- Resumo e explicação de tickets de atendimento.
+- Interpretação de comentários e notas de NPS.
+- Geração de respostas em linguagem natural.
+- Descrição e análise de imagens por modelo multimodal.
+- Integração backend-to-backend com autenticação por API key.
+
+> Aethra não é um LLM. Aethra é a aplicação/API de GenAI; Ollama ou vLLM
+> servem os modelos; modelos como Llama e LLaVA executam a geração.
+
+## Recursos
+
+| Recurso | Descrição |
+| --- | --- |
+| API-first | Endpoints FastAPI documentados e próprios para integração |
+| Providers desacoplados | Suporte a Ollama e vLLM por variável de ambiente |
+| Texto e visão | Rotas para chat, resumo e imagens em base64 |
+| Segurança | `X-API-Key`, CORS configurável e Swagger desligável |
+| Execução local | Ollama no Windows para desenvolvimento e pilotos |
+| Escalabilidade futura | vLLM OpenAI-compatible para infraestrutura Linux/GPU |
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    S["Sistema terceiro<br/>ERP, CRM, Help Desk"] -->|"HTTPS + X-API-Key"| A["Aethra API<br/>FastAPI"]
+    F["Frontend opcional"] --> A
+    A --> P{"Provider ativo"}
+    P -->|"PROVIDER=ollama"| O["Ollama<br/>Windows / Local"]
+    P -->|"PROVIDER=vllm"| V["vLLM<br/>OpenAI-compatible"]
+    O --> M["Modelo configurado"]
+    V --> M
+```
+
+### Fluxo recomendado para integração externa
+
+```text
+Sistema terceiro -> HTTPS + X-API-Key -> Tunnel/Proxy -> Aethra :8080 -> Ollama :11434
+```
+
+O Ollama deve permanecer privado, escutando apenas localmente. Sistemas
+terceiros acessam somente a Aethra.
+
+## Endpoints
+
+| Método | Endpoint | Função | Autenticação quando `API_KEY` existe |
+| --- | --- | --- | --- |
+| `GET` | `/health` | Estado da API e do provider ativo | Pública |
+| `POST` | `/chat` | Geração de respostas textuais | `X-API-Key` |
+| `POST` | `/summarize` | Resumo e análise de textos | `X-API-Key` |
+| `POST` | `/vision` | Interpretação de imagens | `X-API-Key` |
+| `GET` | `/docs` | Swagger UI, se habilitado | Configurável |
+
+## Stack
+
+- Python 3.11+
+- FastAPI e Pydantic
+- Ollama para execução local no Windows
+- vLLM para serving OpenAI-compatible em ambientes Linux/GPU adequados
+- ngrok ou proxy HTTPS para acesso externo
+
+## Estrutura Do Projeto
 
 ```text
 Aethra/
@@ -29,201 +112,72 @@ Aethra/
 |       |   |-- chat_service.py
 |       |   |-- summarize_service.py
 |       |   `-- vision_service.py
-|       `-- main.py
+|       |-- main.py
+|       `-- security.py
+|-- deployment/
+|   |-- .env.production.example
+|   `-- Caddyfile.example
 |-- frontend/
-`-- requirements.txt
+|-- requirements.txt
+`-- README.md
 ```
 
-## Arquitetura
+## Início Rápido No Windows Com Ollama
 
-- `routes`: contrato HTTP publico e documentacao automatica em `/docs`.
-- `services`: prompts e casos de uso de chat, resumo e multimodalidade.
-- `providers`: integracao com engines de inferencia; vLLM e Ollama implementam
-  o mesmo contrato.
-- `config`: selecao do provider, modelos e endpoints por variaveis de ambiente.
+Esta é a forma mais simples de executar a Aethra localmente.
 
-As rotas publicas permanecem `GET /health`, `POST /chat`,
-`POST /summarize` e `POST /vision`. O campo legado `ollama` de `/health`
-foi mantido e reflete o status do provider ativo; novos clientes devem usar
-`provider` e `provider_status`.
+### 1. Pré-requisitos
 
-## Configuracao
+- Python 3.11 ou superior.
+- [Ollama para Windows](https://ollama.com/download/windows).
+- PowerShell.
 
-Na raiz do projeto:
+### 2. Baixe os modelos
+
+Para chat e resumo:
 
 ```powershell
-Copy-Item backend/.env.example backend/.env
+ollama pull llama3.2:3b
 ```
 
-Configuracao padrao:
+Para análise de imagens:
+
+```powershell
+ollama pull llava:7b
+```
+
+Confira os modelos instalados:
+
+```powershell
+ollama list
+```
+
+### 3. Configure o ambiente local
+
+Crie ou ajuste `backend/.env`:
 
 ```dotenv
-PROVIDER=vllm
-VLLM_BASE_URL=http://localhost:8000/v1
-VLLM_API_KEY=EMPTY
-DEFAULT_CHAT_MODEL=meta-llama/Llama-4-Scout-17B-16E-Instruct
-DEFAULT_VISION_MODEL=meta-llama/Llama-4-Scout-17B-16E-Instruct
-REQUEST_TIMEOUT=300
-APP_NAME=Aethra API
-APP_VERSION=1.0.0
-APP_DESCRIPTION=API da Aethra para chat, resumo e visao
-```
-
-`DEFAULT_CHAT_MODEL` e `DEFAULT_VISION_MODEL` devem corresponder ao nome
-exposto pelo vLLM. O armazenamento do modelo pode mudar sem alterar o codigo:
-basta iniciar o vLLM com o novo path e manter ou ajustar
-`--served-model-name` e o `.env`.
-
-## Producao Com Ollama
-
-Para sistemas terceiros, publique somente a API Aethra. Mantenha o Ollama
-escutando em `127.0.0.1:11434`, sem expor essa porta na rede ou na internet.
-
-O fluxo recomendado e:
-
-```text
-Sistema terceiro -> HTTPS + X-API-Key -> Caddy -> Aethra :8080 -> Ollama :11434
-```
-
-O arquivo `deployment/.env.production.example` contem um modelo de
-configuracao para Ollama. Gere uma chave segura no PowerShell:
-
-```powershell
-$bytes = New-Object byte[] 32
-[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
-[Convert]::ToBase64String($bytes)
-```
-
-No servidor, crie `backend/.env` a partir do modelo e substitua `API_KEY`.
-Esse arquivo contem segredo e nao deve ser commitado. Como versoes iniciais
-deste projeto rastreavam `backend/.env`, remova-o do indice Git antes de
-inserir qualquer chave real:
-
-```powershell
-git rm --cached backend/.env
-```
-
-Outra opcao e configurar essas variaveis diretamente no servico Windows que
-executara a API, sem gravar a chave dentro do repositorio.
-
-```dotenv
-ENVIRONMENT=production
-API_KEY=<CHAVE_GERADA>
-CORS_ORIGINS=
-ENABLE_DOCS=false
+ENVIRONMENT=development
+CORS_ORIGINS=http://localhost:5500
+ENABLE_DOCS=true
 
 PROVIDER=ollama
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 DEFAULT_CHAT_MODEL=llama3.2:3b
 DEFAULT_VISION_MODEL=llava:7b
 REQUEST_TIMEOUT=300
+
+APP_NAME=Aethra API
+APP_VERSION=1.0.0
+APP_DESCRIPTION=API da Aethra para chat, resumo e visao
 ```
 
-`CORS_ORIGINS` pode ficar vazio quando somente backends consumirem a API. Se
-um aplicativo web autorizado fizer chamadas diretamente do navegador, informe
-as origens separadas por virgula, por exemplo
-`https://portal.exemplo.com.br,https://admin.exemplo.com.br`.
+Em desenvolvimento, `API_KEY` pode ficar ausente para facilitar os testes
+locais.
 
-Inicie a Aethra sem `--reload`, vinculada apenas ao host local:
+### 4. Instale e execute a API
 
-```powershell
-uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
-```
-
-Coloque HTTPS na frente da Aethra usando um proxy reverso. Com Caddy, copie
-`deployment/Caddyfile.example`, substitua o dominio e execute:
-
-```powershell
-Copy-Item deployment\Caddyfile.example deployment\Caddyfile
-# Edite deployment\Caddyfile e substitua api.exemplo.com.br pelo seu dominio.
-caddy run --config deployment\Caddyfile
-```
-
-O dominio deve apontar para o servidor e as portas `80` e `443` devem chegar
-ao Caddy. Em uma instalacao permanente, execute Ollama, Aethra e Caddy como
-servicos que iniciam com o Windows e reiniciam em caso de falha.
-
-Chamadas autenticadas de um sistema terceiro:
-
-```powershell
-$headers = @{ "X-API-Key" = "<CHAVE_GERADA>" }
-$body = @{
-  texto = "Conteudo do e-mail recebido pelo sistema integrador."
-  instrucoes = "Resuma, classifique a prioridade e indique a proxima acao."
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "https://api.exemplo.com.br/summarize" `
-  -Method Post `
-  -Headers $headers `
-  -ContentType "application/json; charset=utf-8" `
-  -Body ([Text.Encoding]::UTF8.GetBytes($body))
-```
-
-Em producao, `/chat`, `/summarize` e `/vision` retornam `401` quando
-`X-API-Key` estiver ausente ou incorreto. `/health` permanece publico para
-monitoramento. Com `ENABLE_DOCS=false`, `/docs` e `/openapi.json` nao ficam
-publicos.
-
-### Sem dominio proprio
-
-Para um piloto externo ou baixo volume, e possivel publicar a Aethra sem
-comprar dominio, usando uma URL HTTPS fornecida por um servico de tunel.
-Continue mantendo a autenticacao `X-API-Key` da Aethra habilitada.
-
-Com `ngrok`, o plano gratuito fornece um dominio de desenvolvimento atribuido
-a conta. Instale o agente no Windows, cadastre o authtoken obtido no painel e
-encaminhe a API local:
-
-```powershell
-ngrok config add-authtoken "<AUTHTOKEN_DO_NGROK>"
-ngrok http 8080
-```
-
-Use a URL HTTPS exibida pelo ngrok, por exemplo
-`https://<dominio-atribuido>.ngrok-free.app/summarize`, como endpoint do
-sistema terceiro. O plano gratuito possui limites de uso e e adequado para
-validacao ou operacao pequena, nao para SLA corporativo.
-
-Como alternativa, o `Tailscale Funnel` fornece uma URL publica HTTPS
-`*.ts.net` e encaminha para a API local:
-
-```powershell
-tailscale funnel --bg 8080
-tailscale funnel status
-```
-
-O Funnel esta em beta; use-o para piloto ou integracoes controladas, nao como
-substituto de infraestrutura com disponibilidade contratual.
-
-## Executar
-
-O vLLM nao tem suporte nativo oficial a Windows. Em uma instalacao oficial
-via WSL/Linux, o path atual em `D:` normalmente aparece como:
-
-```bash
-/mnt/d/Modelos LLMs/Llama-4-Scout-17B-16E-Instruct
-```
-
-Se esse diretorio estiver em um formato carregavel pela versao instalada do
-vLLM, o serving pode ser iniciado na porta `8000` assim:
-
-```bash
-vllm serve "/mnt/d/Modelos LLMs/Llama-4-Scout-17B-16E-Instruct" \
-  --served-model-name meta-llama/Llama-4-Scout-17B-16E-Instruct \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --limit-mm-per-prompt '{"image": 1}'
-```
-
-O diretorio local observado contem checkpoints `.pth` no formato original. As
-receitas oficiais do Scout para vLLM usam variantes preparadas para serving.
-Caso a versao instalada do vLLM nao aceite esses artefatos, use um diretorio
-convertido/compativel ou um model ID autorizado no servidor; a API da Aethra
-nao precisa mudar.
-
-Instale e execute a Aethra em outra porta, pois `8000` esta reservada para o
-vLLM:
+Na raiz do projeto:
 
 ```powershell
 python -m venv .venv
@@ -232,46 +186,384 @@ pip install -r requirements.txt
 uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-- Swagger: <http://localhost:8080/docs>
-- Frontend opcional: execute `python -m http.server 5500` dentro de `frontend/`
+Abra:
 
-## Chamadas HTTP
+- Swagger local: [http://localhost:8080/docs](http://localhost:8080/docs)
+- Health check: [http://localhost:8080/health](http://localhost:8080/health)
 
-Health check:
+Resposta esperada em `/health`:
 
-```bash
-curl http://localhost:8080/health
+```json
+{
+  "status": "ok",
+  "api": "online",
+  "provider": "ollama",
+  "provider_status": "online",
+  "default_chat_model": "llama3.2:3b",
+  "default_vision_model": "llava:7b",
+  "ollama": "online"
+}
 ```
 
-Chat:
+### 5. Execute o frontend opcional
 
-```bash
-curl -X POST http://localhost:8080/chat \
-  -H "Content-Type: application/json" \
-  -d '{"pergunta":"Explique o motivo mais comum de churn em NPS baixo.","temperatura":0.2}'
+Em outro terminal:
+
+```powershell
+cd frontend
+python -m http.server 5500
 ```
 
-Resumo de ticket, e-mail ou NPS:
+Abra [http://localhost:5500](http://localhost:5500).
 
-```bash
-curl -X POST http://localhost:8080/summarize \
-  -H "Content-Type: application/json" \
-  -d '{"texto":"Cliente relata cobranca duplicada e aguarda retorno ha 3 dias.","instrucoes":"Resuma o ticket e indique a acao recomendada."}'
+> O frontend atual é uma interface simples para chat. A rota `/vision` deve
+> ser consumida diretamente pela API até que um upload de imagens seja
+> implementado na interface.
+
+## Utilização Da API
+
+### Chat
+
+```powershell
+$body = @{
+  pergunta = "Explique em poucas palavras o que é NPS."
+  temperatura = 0.2
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Uri "http://localhost:8080/chat" `
+  -Method Post `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))
 ```
 
-Visao com imagem base64:
+### Resumo De E-Mail
 
-```bash
-curl -X POST http://localhost:8080/vision \
-  -H "Content-Type: application/json" \
-  -d '{"imagem_base64":"<BASE64_DA_IMAGEM>","imagem_media_type":"image/jpeg","prompt":"Descreva esta imagem."}'
+```powershell
+$body = @{
+  texto = @"
+Assunto: Cobrança duplicada
+De: cliente@empresa.com
+
+Olá, identifiquei duas cobranças iguais em minha fatura deste mês.
+Já abri um chamado há três dias, mas ainda não tive retorno.
+Preciso que uma das cobranças seja estornada com urgência.
+"@
+  instrucoes = "Resuma este e-mail, informe prioridade e próxima ação."
+} | ConvertTo-Json
+
+$resposta = Invoke-RestMethod `
+  -Uri "http://localhost:8080/summarize" `
+  -Method Post `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))
+
+$resposta.resposta
 ```
 
-Para retornar temporariamente ao provider anterior:
+### Resumo A Partir De Arquivo
+
+```powershell
+$email = Get-Content "C:\Temp\email.txt" -Raw -Encoding UTF8
+
+$body = @{
+  texto = $email
+  instrucoes = "Gere um resumo executivo, classifique urgência e sugira o próximo passo."
+} | ConvertTo-Json
+
+(Invoke-RestMethod `
+  -Uri "http://localhost:8080/summarize" `
+  -Method Post `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
+```
+
+### Imagem
+
+```powershell
+$imagem = [Convert]::ToBase64String(
+  [IO.File]::ReadAllBytes("C:\Temp\imagem.jpg")
+)
+
+$body = @{
+  imagem_base64 = $imagem
+  imagem_media_type = "image/jpeg"
+  prompt = "Descreva a imagem e identifique informações relevantes."
+} | ConvertTo-Json
+
+(Invoke-RestMethod `
+  -Uri "http://localhost:8080/vision" `
+  -Method Post `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
+```
+
+## Contratos JSON
+
+### `POST /chat`
+
+Requisição:
+
+```json
+{
+  "pergunta": "Explique o motivo mais comum de churn.",
+  "system_prompt": "Responda de forma objetiva em português do Brasil.",
+  "temperatura": 0.2,
+  "max_tokens": 300
+}
+```
+
+### `POST /summarize`
+
+Requisição:
+
+```json
+{
+  "texto": "Conteúdo completo do e-mail, ticket ou feedback.",
+  "instrucoes": "Resuma, classifique prioridade e indique próxima ação.",
+  "max_tokens": 400
+}
+```
+
+### `POST /vision`
+
+Requisição:
+
+```json
+{
+  "imagem_base64": "<BASE64_DA_IMAGEM>",
+  "imagem_media_type": "image/jpeg",
+  "prompt": "Descreva a imagem.",
+  "max_tokens": 300
+}
+```
+
+### Resposta Das Rotas Generativas
+
+```json
+{
+  "status": "ok",
+  "model": "llama3.2:3b",
+  "resposta": "Texto gerado pelo modelo...",
+  "metadados": {
+    "provider": "ollama"
+  }
+}
+```
+
+## E-Mails Grandes
+
+O conteúdo do e-mail deve ser enviado no corpo da requisição. Isso é esperado
+em integrações de API. O limite relevante é a janela de contexto do modelo,
+não a URL.
+
+Para e-mails longos ou threads extensas, recomenda-se:
+
+1. Remover HTML desnecessário, assinaturas repetidas e imagens embutidas.
+2. Extrair assunto, remetente, data e corpo principal.
+3. Dividir textos muito grandes em partes.
+4. Resumir cada parte e gerar um resumo consolidado.
+
+O processamento automático em partes ainda não está implementado nesta
+versão da Aethra.
+
+## Segurança E Produção
+
+Quando `API_KEY` estiver configurada, as rotas `/chat`, `/summarize` e
+`/vision` exigem o header:
+
+```http
+X-API-Key: SUA_CHAVE_PRIVADA
+```
+
+Em `ENVIRONMENT=production`, a aplicação:
+
+- Exige uma `API_KEY` com pelo menos 32 caracteres.
+- Rejeita `CORS_ORIGINS=*`.
+- Pode ocultar Swagger e OpenAPI com `ENABLE_DOCS=false`.
+
+### Gere uma chave segura
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Nunca publique essa chave em documentação, commits, frontend ou mensagens.
+Se uma chave for exibida publicamente, gere uma nova e substitua-a em todos
+os consumidores.
+
+### Configure produção com Ollama
+
+Copie o template:
+
+```powershell
+Copy-Item deployment\.env.production.example backend\.env
+```
+
+Edite `backend/.env`:
 
 ```dotenv
+ENVIRONMENT=production
+API_KEY=<NOVA_CHAVE_SEGURA>
+CORS_ORIGINS=
+ENABLE_DOCS=false
+
 PROVIDER=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-DEFAULT_CHAT_MODEL=llama3.1:8b
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+DEFAULT_CHAT_MODEL=llama3.2:3b
 DEFAULT_VISION_MODEL=llava:7b
+REQUEST_TIMEOUT=300
+
+APP_NAME=Aethra API
+APP_VERSION=1.0.0
+APP_DESCRIPTION=API da Aethra para chat, resumo e visao
 ```
+
+O arquivo `backend/.env` contém segredo. Caso já tenha sido adicionado ao
+Git em uma versão anterior, remova-o do índice antes de gravar chaves:
+
+```powershell
+git rm --cached backend/.env
+```
+
+Execute a API sem reload e exponha apenas localmente para o túnel ou proxy:
+
+```powershell
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
+```
+
+## Publicação Sem Domínio Com Ngrok
+
+Para piloto, demonstração ou baixo volume, o ngrok permite disponibilizar a
+API por HTTPS sem comprar domínio.
+
+### 1. Instale e autentique o ngrok
+
+Baixe o agente para Windows:
+
+- [ngrok para Windows](https://ngrok.com/download/windows/)
+
+Configure seu token do ngrok:
+
+```powershell
+ngrok config add-authtoken "<AUTHTOKEN_DO_NGROK>"
+```
+
+### 2. Publique a API local
+
+Com Ollama e Aethra rodando:
+
+```powershell
+ngrok http 8080
+```
+
+O ngrok exibirá uma URL HTTPS pública. Use a URL exibida pelo seu terminal;
+ela não deve ser fixada no código do projeto.
+
+### 3. Consuma externamente
+
+```powershell
+$url = "https://<URL_FORNECIDA_PELO_NGROK>"
+$headers = @{
+  "X-API-Key" = "<SUA_CHAVE_DA_AETHRA>"
+  "ngrok-skip-browser-warning" = "1"
+}
+
+$body = @{
+  texto = "Cliente informa cobrança duplicada e solicita estorno urgente."
+  instrucoes = "Resuma o e-mail e informe prioridade."
+} | ConvertTo-Json
+
+(Invoke-RestMethod `
+  -Uri "$url/summarize" `
+  -Method Post `
+  -Headers $headers `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
+```
+
+O plano gratuito do ngrok é adequado para validação e operações pequenas,
+mas possui limites de uso e não substitui hospedagem com SLA.
+
+## Integração Em JavaScript
+
+Este exemplo deve rodar em um backend, nunca em JavaScript entregue ao
+navegador, pois contém a chave privada.
+
+```javascript
+const response = await fetch(`${process.env.AETHRA_URL}/summarize`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-API-Key": process.env.AETHRA_API_KEY,
+    "ngrok-skip-browser-warning": "1"
+  },
+  body: JSON.stringify({
+    texto: emailContent,
+    instrucoes: "Resuma o e-mail, informe prioridade e próxima ação."
+  })
+});
+
+if (!response.ok) {
+  throw new Error(`Aethra retornou HTTP ${response.status}`);
+}
+
+const result = await response.json();
+console.log(result.resposta);
+```
+
+## Provider vLLM
+
+Aethra também suporta vLLM por meio da API OpenAI-compatible:
+
+- Health check do provider: `/v1/models`
+- Geração e resumo: `/v1/chat/completions`
+- Visão: mensagens multimodais OpenAI-style
+
+Configuração:
+
+```dotenv
+PROVIDER=vllm
+VLLM_BASE_URL=http://localhost:8000/v1
+VLLM_API_KEY=EMPTY
+DEFAULT_CHAT_MODEL=meta-llama/Llama-4-Scout-17B-16E-Instruct
+DEFAULT_VISION_MODEL=meta-llama/Llama-4-Scout-17B-16E-Instruct
+```
+
+O vLLM é indicado para infraestrutura Linux com GPU adequada. Modelos
+grandes, como Llama-4-Scout, exigem recursos significativamente superiores a
+uma GPU de notebook e podem requerer pesos em formato compatível com serving.
+
+## Troubleshooting
+
+| Sintoma | Causa provável | Solução |
+| --- | --- | --- |
+| `/health` retorna `degraded` | Provider não está ativo | Inicie Ollama ou vLLM e confira o `.env` |
+| `502 Bad Gateway` | Modelo/provider indisponível | Execute `ollama list`, baixe o modelo e reinicie a API |
+| `401 Unauthorized` | API key ausente ou incorreta | Envie `X-API-Key` com a chave configurada |
+| Erro ao analisar JSON com acentos | Encoding do PowerShell | Envie `UTF8.GetBytes($body)` e `charset=utf-8` |
+| `/vision` demora muito | Modelo visual pesado para a GPU | Aguarde ou use hardware/modelo mais adequado |
+| `GET /chat` retorna `405` | Rota aceita somente POST | Use `POST` com JSON no body |
+| `/docs` retorna `404` | Docs desabilitada em produção | Use `ENABLE_DOCS=true` somente em ambiente controlado |
+
+## Limitações Atuais E Próximos Passos
+
+- O frontend atual atende chat simples; ainda não envia imagens.
+- Não há chunking automático para e-mails muito longos.
+- Não há integração direta com Outlook, Gmail ou filas de mensagens.
+- Para uso crítico, ainda são recomendados rate limiting, auditoria,
+  observabilidade, rotação de chaves e infraestrutura dedicada.
+
+Evoluções naturais:
+
+- Upload e processamento de arquivos `.eml` e `.txt`.
+- Sumarização hierárquica de conversas extensas.
+- Endpoints orientados a tickets e NPS com saída estruturada.
+- Integração por `message_id` com provedores de e-mail.
+- Métricas, logs de auditoria e limites por consumidor.
+
+## Licença
+
+Distribuído sob licença MIT. Consulte [LICENSE](LICENSE).
