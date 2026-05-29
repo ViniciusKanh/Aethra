@@ -1,6 +1,25 @@
-const DEFAULT_API_URL = window.location.protocol.startsWith("http")
-  ? window.location.origin
-  : "http://localhost:8080";
+const HF_SPACE_API_URL = "https://viniciuskhan-aethra.hf.space";
+
+function resolveDefaultApiUrl() {
+  const isHttp = window.location.protocol.startsWith("http");
+  const host = window.location.hostname;
+
+  if (!isHttp) {
+    return "http://localhost:8080";
+  }
+  if (host.endsWith("github.io")) {
+    return HF_SPACE_API_URL;
+  }
+  if (window.location.pathname.startsWith("/app")) {
+    return window.location.origin;
+  }
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+    return "http://localhost:8080";
+  }
+  return window.location.origin;
+}
+
+const DEFAULT_API_URL = resolveDefaultApiUrl();
 const STORAGE_KEYS = {
   apiUrl: "aethra.apiUrl",
   apiKey: "aethra.apiKey",
@@ -72,7 +91,8 @@ function persistConnection() {
 function restoreConnection() {
   const storedUrl = sessionStorage.getItem(STORAGE_KEYS.apiUrl);
   const isServedByAethra = window.location.pathname.startsWith("/app");
-  byId("api-url").value = isServedByAethra ? DEFAULT_API_URL : storedUrl || DEFAULT_API_URL;
+  const isGithubPages = window.location.hostname.endsWith("github.io");
+  byId("api-url").value = isServedByAethra || isGithubPages ? DEFAULT_API_URL : storedUrl || DEFAULT_API_URL;
   byId("api-key").value = sessionStorage.getItem(STORAGE_KEYS.apiKey) || "";
   byId("ngrok-header").checked = sessionStorage.getItem(STORAGE_KEYS.ngrokHeader) === "true";
 }
