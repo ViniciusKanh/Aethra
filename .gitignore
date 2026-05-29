@@ -5,3 +5,6 @@ __pycache__/
 # Segredos locais e de producao nao devem ser versionados.
 backend/.env
 deployment/.env.production
+
+# Clone separado do Hugging Face Space. Ele tem o proprio repositorio Git.
+aethra/

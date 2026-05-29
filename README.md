@@ -370,9 +370,46 @@ $body = @{
 
 O frontend da Aethra está na pasta `frontend/`.
 
-A forma mais fácil é criar um repositório separado só para o front.
+O GitHub Pages normalmente só deixa publicar a partir de:
 
-### Opção Simples
+- `/root`
+- `/docs`
+
+Como o projeto original usa a pasta `frontend/`, este repositório também tem
+uma cópia pronta em `docs/`. Assim você pode publicar pelo GitHub Pages sem
+precisar mover o backend.
+
+### Opção Recomendada Neste Repositório
+
+No GitHub, vá em:
+
+```text
+Settings → Pages → Build and deployment
+```
+
+Escolha:
+
+```text
+Source: Deploy from a branch
+Branch: main
+Folder: /docs
+```
+
+Depois clique em:
+
+```text
+Save
+```
+
+O GitHub vai gerar uma URL parecida com:
+
+```text
+https://SEU_USUARIO.github.io/NOME_DO_REPOSITORIO/
+```
+
+### Opção Com Repositório Separado
+
+Outra forma é criar um repositório separado só para o front.
 
 1. Crie um repositório no GitHub, por exemplo `aethra-front`.
 2. Envie para esse repositório os arquivos dentro da pasta `frontend/`:
