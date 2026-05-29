@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#070b18" />
-  <title>Aethra | GenAI Workspace</title>
+  <title>Aethra | GenAI Control Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet" />
@@ -21,7 +21,7 @@
       </span>
       <span>
         <strong>Aethra</strong>
-        <small>GenAI Workspace</small>
+        <small>GenAI Control Center</small>
       </span>
     </a>
 
@@ -44,12 +44,12 @@
       <div class="hero-content">
         <div class="eyebrow">
           <span></span>
-          Inteligencia generativa por API
+          IA generativa conectada por API
         </div>
-        <h1>Uma central inteligente para <span>texto, suporte e visao.</span></h1>
+        <h1>Um cockpit inteligente para <span>texto, suporte e visão.</span></h1>
         <p>
-          Experimente todas as capacidades da Aethra em um painel unico:
-          converse com o modelo, resuma e-mails ou tickets e analise imagens.
+          Use a Aethra como uma camada de inteligência para sistemas reais:
+          converse com o modelo, resuma operações e analise imagens por API.
         </p>
         <div class="hero-actions">
           <button class="primary-button" type="button" data-open-tab="summary">
@@ -57,7 +57,7 @@
             <svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </button>
           <button class="secondary-button" type="button" data-open-tab="integration">
-            Ver integracao
+            Ver documentação
           </button>
         </div>
       </div>
@@ -113,29 +113,22 @@
             <p class="label">Conexao</p>
             <h2>API Aethra</h2>
           </div>
-          <span class="lock-badge">
-            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3m-11 0h12v10H6V11Z" /></svg>
-            Seguro
+          <span class="lock-badge no-key">
+            <svg viewBox="0 0 24 24"><path d="M12 3v4m0 10v4M4.9 4.9l2.8 2.8m8.6 8.6 2.8 2.8M3 12h4m10 0h4M4.9 19.1l2.8-2.8m8.6-8.6 2.8-2.8" /></svg>
+            Aberta
           </span>
         </div>
 
         <label class="input-label" for="api-url">URL da API</label>
         <div class="input-wrap">
           <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" /></svg>
-          <input id="api-url" type="url" value="" placeholder="https://sua-url.ngrok-free.dev" />
+          <input id="api-url" type="url" value="" placeholder="https://viniciuskhan-aethra.hf.space" />
         </div>
 
-        <label class="input-label" for="api-key">X-API-Key</label>
-        <div class="input-wrap password">
-          <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3m-11 0h12v10H6V11Z" /></svg>
-          <input id="api-key" type="password" autocomplete="off" placeholder="Obrigatoria em producao" />
-          <button id="toggle-key" class="peek" type="button" aria-label="Mostrar ou ocultar chave">Ver</button>
-        </div>
-
-        <label class="checkbox-row">
-          <input id="ngrok-header" type="checkbox" />
-          <span>Enviar header auxiliar do ngrok</span>
-        </label>
+        <p class="connection-hint">
+          O painel público usa a API aberta do Space. Basta apontar para a URL
+          e começar a consumir os recursos da Aethra.
+        </p>
 
         <div class="connection-actions">
           <button id="save-connection" class="primary-button compact" type="button">Aplicar</button>
@@ -148,6 +141,10 @@
             <strong id="api-status">Nao verificado</strong>
           </div>
           <div class="provider-line">
+            <span>Auth</span>
+            <strong id="auth-mode">Aberta</strong>
+          </div>
+          <div class="provider-line">
             <span>Chat</span>
             <strong id="chat-model">--</strong>
           </div>
@@ -158,8 +155,8 @@
         </div>
 
         <p class="security-note">
-          Para demonstracao, a chave fica somente nesta sessao do navegador.
-          Nao publique uma pagina contendo chave de producao.
+          O front no GitHub Pages já aponta para o Space da Aethra. Se o Space
+          estiver dormindo, a primeira chamada pode demorar alguns segundos.
         </p>
       </aside>
 
@@ -179,7 +176,7 @@
           </button>
           <button class="tab" type="button" data-tab="integration">
             <svg viewBox="0 0 24 24"><path d="m8 9-4 3 4 3m8-6 4 3-4 3m-3-9-2 12" /></svg>
-            Integracao
+            Docs API
           </button>
         </nav>
 
@@ -320,15 +317,30 @@
           <div class="panel-header">
             <div>
               <p class="label">API-first</p>
-              <h2>Integracao com terceiros</h2>
+              <h2>Documentação das APIs</h2>
             </div>
           </div>
 
           <p class="integration-intro">
-            Sistemas externos devem consumir a Aethra pelo backend, enviando a
-            chave em <code>X-API-Key</code>. Nunca exponha a chave em um
-            frontend publicado.
+            A Aethra expõe rotas HTTP simples para outros sistemas consumirem
+            recursos de GenAI. No ambiente público atual, a API está aberta:
+            basta enviar JSON para o endpoint desejado.
           </p>
+
+          <div class="doc-hero">
+            <div>
+              <small>Endpoint base</small>
+              <strong id="docs-base-url">https://viniciuskhan-aethra.hf.space</strong>
+            </div>
+            <div>
+              <small>Autenticação</small>
+              <strong>Desativada</strong>
+            </div>
+            <div>
+              <small>Formato</small>
+              <strong>JSON UTF-8</strong>
+            </div>
+          </div>
 
           <div class="endpoint-list">
             <div><span class="method get">GET</span><code>/health</code><small>Status publico</small></div>
@@ -338,12 +350,77 @@
             <div><span class="method post">POST</span><code>/vision</code><small>Imagem base64</small></div>
           </div>
 
-          <div class="snippet-card">
+          <div class="docs-grid">
+            <article class="doc-card">
+              <span class="method get">GET</span>
+              <h3>/health</h3>
+              <p>Verifica se a API está online, qual provider está ativo e quais modelos estão configurados.</p>
+              <pre><code>Invoke-RestMethod -Uri "{{API_URL}}/health"</code></pre>
+            </article>
+
+            <article class="doc-card">
+              <span class="method post">POST</span>
+              <h3>/chat</h3>
+              <p>Geração de texto e conversa com o modelo principal.</p>
+              <pre><code>{
+  "pergunta": "Explique o que é NPS.",
+  "temperatura": 0.2,
+  "max_tokens": 300
+}</code></pre>
+            </article>
+
+            <article class="doc-card">
+              <span class="method post">POST</span>
+              <h3>/summarize/email</h3>
+              <p>Resumo especializado de e-mails com assunto, remetente, corpo e instruções opcionais.</p>
+              <pre><code>{
+  "assunto": "Cobrança duplicada",
+  "remetente": "cliente@empresa.com",
+  "corpo": "Texto completo do e-mail...",
+  "instrucoes": "Informe prioridade e próxima ação."
+}</code></pre>
+            </article>
+
+            <article class="doc-card">
+              <span class="method post">POST</span>
+              <h3>/vision</h3>
+              <p>Envia imagem em base64 para análise multimodal com o modelo visual configurado.</p>
+              <pre><code>{
+  "imagem_base64": "BASE64_DA_IMAGEM",
+  "imagem_media_type": "image/jpeg",
+  "prompt": "Descreva a imagem."
+}</code></pre>
+            </article>
+          </div>
+
+          <div class="api-flow">
+            <h3>Fluxo recomendado</h3>
+            <div class="flow-steps">
+              <span>1. Envie JSON</span>
+              <span>2. Aethra chama Ollama</span>
+              <span>3. Modelo responde</span>
+              <span>4. Sua aplicação usa o resultado</span>
+            </div>
+          </div>
+
+          <div class="snippet-card docs-snippet">
             <div class="result-header">
-              <span>Exemplo PowerShell</span>
+              <span>Exemplo completo: resumo de e-mail</span>
               <button class="text-button copy-result" type="button" data-copy="integration-code">Copiar</button>
             </div>
             <pre><code id="integration-code"></code></pre>
+          </div>
+
+          <div class="response-doc">
+            <h3>Resposta padrão</h3>
+            <pre><code>{
+  "status": "ok",
+  "model": "llama3.2:3b",
+  "resposta": "Texto gerado pelo modelo...",
+  "metadados": {
+    "provider": "ollama"
+  }
+}</code></pre>
           </div>
         </section>
       </section>

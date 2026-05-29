@@ -22,7 +22,6 @@ function resolveDefaultApiUrl() {
 const DEFAULT_API_URL = resolveDefaultApiUrl();
 const STORAGE_KEYS = {
   apiUrl: "aethra.apiUrl",
-  apiKey: "aethra.apiKey",
   ngrokHeader: "aethra.ngrokHeader"
 };
 
@@ -62,20 +61,21 @@ function byId(id) {
   return document.getElementById(id);
 }
 
+function maybeById(id) {
+  return document.getElementById(id);
+}
+
 function apiUrl() {
   return byId("api-url").value.trim().replace(/\/+$/, "") || DEFAULT_API_URL;
 }
 
 function requestHeaders(includeContentType = true) {
   const headers = {};
-  const key = byId("api-key").value.trim();
   if (includeContentType) {
     headers["Content-Type"] = "application/json";
   }
-  if (key) {
-    headers["X-API-Key"] = key;
-  }
-  if (byId("ngrok-header").checked) {
+  const ngrokInput = maybeById("ngrok-header");
+  if (ngrokInput?.checked) {
     headers["ngrok-skip-browser-warning"] = "1";
   }
   return headers;
@@ -83,8 +83,8 @@ function requestHeaders(includeContentType = true) {
 
 function persistConnection() {
   sessionStorage.setItem(STORAGE_KEYS.apiUrl, apiUrl());
-  sessionStorage.setItem(STORAGE_KEYS.apiKey, byId("api-key").value.trim());
-  sessionStorage.setItem(STORAGE_KEYS.ngrokHeader, String(byId("ngrok-header").checked));
+  const ngrokInput = maybeById("ngrok-header");
+  sessionStorage.setItem(STORAGE_KEYS.ngrokHeader, String(Boolean(ngrokInput?.checked)));
   updateIntegrationSnippet();
 }
 
@@ -93,8 +93,10 @@ function restoreConnection() {
   const isServedByAethra = window.location.pathname.startsWith("/app");
   const isGithubPages = window.location.hostname.endsWith("github.io");
   byId("api-url").value = isServedByAethra || isGithubPages ? DEFAULT_API_URL : storedUrl || DEFAULT_API_URL;
-  byId("api-key").value = sessionStorage.getItem(STORAGE_KEYS.apiKey) || "";
-  byId("ngrok-header").checked = sessionStorage.getItem(STORAGE_KEYS.ngrokHeader) === "true";
+  const ngrokInput = maybeById("ngrok-header");
+  if (ngrokInput) {
+    ngrokInput.checked = sessionStorage.getItem(STORAGE_KEYS.ngrokHeader) === "true";
+  }
 }
 
 function showToast(message, isError = false) {
@@ -161,9 +163,7 @@ async function checkHealth() {
     byId("chat-model").textContent = data.default_chat_model;
     byId("vision-model").textContent = data.default_vision_model;
     byId("vision-panel-model").textContent = data.default_vision_model;
-    byId("api-key").placeholder = data.auth_enabled
-      ? "Obrigatoria nesta API"
-      : "Autenticacao desativada";
+    byId("auth-mode").textContent = data.auth_enabled ? "Privada" : "Aberta";
     return true;
   } catch (error) {
     setStatus("offline", "Sem conexao");
@@ -389,14 +389,11 @@ async function copyResult(id) {
 
 function updateIntegrationSnippet() {
   const url = apiUrl();
-  byId("integration-code").textContent = `$headers = @{
-  "ngrok-skip-browser-warning" = "1"
-}
-
-# Se AUTH_ENABLED=true no backend, adicione:
-# $headers["X-API-Key"] = "<SUA_CHAVE_PRIVADA>"
-
-$body = @{
+  const docsBaseUrl = maybeById("docs-base-url");
+  if (docsBaseUrl) {
+    docsBaseUrl.textContent = url;
+  }
+  byId("integration-code").textContent = `$body = @{
   assunto = "Problema com pagamento"
   remetente = "cliente@empresa.com"
   corpo = "Conteudo completo do e-mail recebido pelo sistema."
@@ -406,7 +403,6 @@ $body = @{
 Invoke-RestMethod \`
   -Uri "${url}/summarize/email" \`
   -Method Post \`
-  -Headers $headers \`
   -ContentType "application/json; charset=utf-8" \`
   -Body ([Text.Encoding]::UTF8.GetBytes($body))`;
 }
@@ -433,15 +429,11 @@ function setupEvents() {
   });
   byId("api-url").addEventListener("input", () => {
     const isNgrok = byId("api-url").value.includes("ngrok");
-    if (isNgrok) {
-      byId("ngrok-header").checked = true;
+    const ngrokInput = maybeById("ngrok-header");
+    if (isNgrok && ngrokInput) {
+      ngrokInput.checked = true;
     }
     updateIntegrationSnippet();
-  });
-  byId("toggle-key").addEventListener("click", () => {
-    const keyInput = byId("api-key");
-    keyInput.type = keyInput.type === "password" ? "text" : "password";
-    byId("toggle-key").textContent = keyInput.type === "password" ? "Ver" : "Ocultar";
   });
 
   byId("chat-form").addEventListener("submit", submitChat);

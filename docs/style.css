@@ -51,6 +51,18 @@ body::before {
   mask-image: radial-gradient(circle at 50% 20%, black, transparent 74%);
 }
 
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(65, 223, 221, 0.055) 45%, transparent 62%),
+    radial-gradient(circle at 20% 12%, rgba(142, 115, 255, 0.12), transparent 26%);
+  mix-blend-mode: screen;
+}
+
 .ambient {
   position: fixed;
   z-index: -1;
@@ -527,6 +539,11 @@ svg {
   background: rgba(38, 160, 118, 0.13);
 }
 
+.lock-badge.no-key {
+  color: var(--cyan);
+  background: rgba(27, 173, 188, 0.13);
+}
+
 .lock-badge svg {
   width: 13px;
   height: 13px;
@@ -598,6 +615,13 @@ textarea::placeholder {
 
 .checkbox-row input {
   accent-color: var(--cyan-deep);
+}
+
+.connection-hint {
+  margin: 12px 2px 0;
+  color: #8998b8;
+  font-size: 0.76rem;
+  line-height: 1.55;
 }
 
 .connection-actions {
@@ -1116,6 +1140,70 @@ textarea:focus {
   line-height: 1.6;
 }
 
+.doc-hero {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr 0.8fr;
+  gap: 13px;
+  margin-bottom: 20px;
+}
+
+.doc-hero div,
+.api-flow,
+.response-doc,
+.doc-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(16, 28, 58, 0.78), rgba(7, 12, 27, 0.62)),
+    radial-gradient(circle at 12% 0%, rgba(65, 223, 221, 0.1), transparent 38%);
+}
+
+.doc-hero div::before,
+.doc-card::before,
+.api-flow::before,
+.response-doc::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(65, 223, 221, 0.15), transparent 38%);
+  opacity: 0.5;
+}
+
+.doc-hero div {
+  padding: 15px 16px;
+}
+
+.doc-hero small,
+.doc-card p,
+.api-flow h3,
+.response-doc h3 {
+  position: relative;
+}
+
+.doc-hero small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.doc-hero strong {
+  position: relative;
+  display: block;
+  margin-top: 7px;
+  overflow: hidden;
+  color: #e5efff;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 code {
   font-family: "Cascadia Code", Consolas, monospace;
 }
@@ -1143,6 +1231,85 @@ code {
 
 .endpoint-list small {
   color: var(--text-muted);
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 15px;
+  margin: 0 0 20px;
+}
+
+.doc-card {
+  min-height: 242px;
+  padding: 18px;
+}
+
+.doc-card h3 {
+  position: relative;
+  margin: 15px 0 8px;
+  color: #e7efff;
+  font-family: "Sora", sans-serif;
+  font-size: 1rem;
+}
+
+.doc-card p {
+  margin: 0 0 14px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.doc-card pre,
+.response-doc pre {
+  position: relative;
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+  border: 1px solid rgba(124, 148, 191, 0.12);
+  border-radius: 12px;
+  color: #c6d4ef;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  background: rgba(4, 9, 22, 0.66);
+}
+
+.api-flow {
+  margin-bottom: 20px;
+  padding: 18px;
+}
+
+.api-flow h3,
+.response-doc h3 {
+  margin: 0 0 14px;
+  color: #e8f1ff;
+  font-family: "Sora", sans-serif;
+  font-size: 0.98rem;
+}
+
+.flow-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.flow-steps span {
+  padding: 12px;
+  border: 1px solid rgba(65, 223, 221, 0.16);
+  border-radius: 12px;
+  color: #cdd9f0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(14, 23, 47, 0.7);
+}
+
+.docs-snippet {
+  margin-bottom: 20px;
+}
+
+.response-doc {
+  padding: 18px;
 }
 
 .method {
@@ -1276,7 +1443,10 @@ code {
   .two-columns,
   .endpoint-list,
   .connection-card,
-  .email-fields {
+  .email-fields,
+  .doc-hero,
+  .docs-grid,
+  .flow-steps {
     grid-template-columns: 1fr;
   }
 
