@@ -25,6 +25,7 @@ def health(request: Request) -> HealthResponse:
         api="online",
         provider=provider.name,
         provider_status=provider_status,
+        auth_enabled=settings.auth_enabled,
         default_chat_model=settings.default_chat_model,
         default_vision_model=settings.default_vision_model,
         # Campo legado para clientes antigos que consultavam o status do Ollama.

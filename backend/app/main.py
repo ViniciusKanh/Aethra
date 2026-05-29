@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import Settings, get_settings
 from .providers import ProviderError, create_provider
@@ -45,6 +46,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(chat_router)
     app.include_router(summarize_router)
     app.include_router(vision_router)
+
+    frontend_dir = active_settings.resolved_frontend_dir
+    if active_settings.frontend_enabled and frontend_dir.exists():
+        app.mount(
+            "/app",
+            StaticFiles(directory=str(frontend_dir), html=True),
+            name="aethra-frontend",
+        )
+
     return app
 
 

@@ -1,5 +1,6 @@
 from .schemas import (
     ChatRequest,
+    EmailSummarizeRequest,
     HealthResponse,
     RootResponse,
     SummarizeRequest,
@@ -9,6 +10,7 @@ from .schemas import (
 
 __all__ = [
     "ChatRequest",
+    "EmailSummarizeRequest",
     "HealthResponse",
     "RootResponse",
     "SummarizeRequest",

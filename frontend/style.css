@@ -932,6 +932,40 @@ textarea:focus {
   min-width: 0;
 }
 
+.email-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+  margin-bottom: 16px;
+}
+
+.email-fields[hidden] {
+  display: none;
+}
+
+.email-fields label span {
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.plain-input {
+  width: 100%;
+  height: 45px;
+  margin-top: 8px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  outline: 0;
+  color: #e1e9fa;
+  background: rgba(7, 12, 28, 0.7);
+  transition: border-color 0.2s;
+}
+
+.plain-input:focus {
+  border-color: var(--border-active);
+}
+
 .field-top {
   display: flex;
   align-items: center;
@@ -1088,7 +1122,7 @@ code {
 
 .endpoint-list {
   display: grid;
-  grid-template-columns: repeat(4, minmax(145px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -1241,7 +1275,8 @@ code {
   .metric-grid,
   .two-columns,
   .endpoint-list,
-  .connection-card {
+  .connection-card,
+  .email-fields {
     grid-template-columns: 1fr;
   }
 

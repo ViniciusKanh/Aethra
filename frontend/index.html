@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20260524" />
+  <link rel="stylesheet" href="style.css?v=20260529-email" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -122,7 +122,7 @@
         <label class="input-label" for="api-url">URL da API</label>
         <div class="input-wrap">
           <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1" /></svg>
-          <input id="api-url" type="url" value="http://localhost:8080" placeholder="https://sua-url.ngrok-free.dev" />
+          <input id="api-url" type="url" value="" placeholder="https://sua-url.ngrok-free.dev" />
         </div>
 
         <label class="input-label" for="api-key">X-API-Key</label>
@@ -228,7 +228,7 @@
         <section id="panel-summary" class="tab-panel" data-panel="summary">
           <div class="panel-header">
             <div>
-              <p class="label">POST /summarize</p>
+              <p id="summary-endpoint-label" class="label">POST /summarize/email</p>
               <h2>Resumo inteligente</h2>
             </div>
             <select id="summary-preset" class="preset" aria-label="Tipo de resumo">
@@ -241,11 +241,22 @@
 
           <div class="two-columns">
             <form id="summary-form" class="tool-form">
+              <div id="email-fields" class="email-fields">
+                <label>
+                  Assunto do e-mail <span>opcional</span>
+                  <input id="summary-email-subject" class="plain-input" type="text" placeholder="Ex.: Problema com pagamento" />
+                </label>
+                <label>
+                  Remetente <span>opcional</span>
+                  <input id="summary-email-from" class="plain-input" type="email" placeholder="cliente@empresa.com" />
+                </label>
+              </div>
+
               <div class="field-top">
-                <label for="summary-text">Conteudo para analisar</label>
+                <label id="summary-text-label" for="summary-text">Corpo do e-mail</label>
                 <button id="load-sample" class="text-button" type="button">Carregar exemplo</button>
               </div>
-              <textarea id="summary-text" rows="11" required placeholder="Cole aqui o corpo do e-mail, ticket ou feedback de NPS..."></textarea>
+              <textarea id="summary-text" rows="11" required placeholder="Cole aqui o corpo completo do e-mail..."></textarea>
               <div class="text-counter"><span id="summary-count">0</span> caracteres</div>
               <label for="summary-instructions">Instrucoes</label>
               <textarea id="summary-instructions" rows="3">Resuma este e-mail, identifique o problema principal, a prioridade e a proxima acao recomendada.</textarea>
@@ -323,6 +334,7 @@
             <div><span class="method get">GET</span><code>/health</code><small>Status publico</small></div>
             <div><span class="method post">POST</span><code>/chat</code><small>Geracao textual</small></div>
             <div><span class="method post">POST</span><code>/summarize</code><small>Resumo de textos</small></div>
+            <div><span class="method post">POST</span><code>/summarize/email</code><small>Resumo de e-mails</small></div>
             <div><span class="method post">POST</span><code>/vision</code><small>Imagem base64</small></div>
           </div>
 
@@ -339,6 +351,6 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="script.js?v=20260524"></script>
+  <script src="script.js?v=20260529-email"></script>
 </body>
 </html>

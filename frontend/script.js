@@ -1,4 +1,6 @@
-const DEFAULT_API_URL = "http://localhost:8080";
+const DEFAULT_API_URL = window.location.protocol.startsWith("http")
+  ? window.location.origin
+  : "http://localhost:8080";
 const STORAGE_KEYS = {
   apiUrl: "aethra.apiUrl",
   apiKey: "aethra.apiKey",
@@ -13,10 +15,9 @@ const state = {
 const presets = {
   email: {
     instructions: "Resuma este e-mail, identifique o problema principal, a prioridade e a proxima acao recomendada.",
-    sample: `Assunto: Cobranca duplicada
-De: cliente@empresa.com
-
-Ola, identifiquei duas cobrancas iguais em minha fatura deste mes.
+    subject: "Cobranca duplicada",
+    from: "cliente@empresa.com",
+    sample: `Ola, identifiquei duas cobrancas iguais em minha fatura deste mes.
 Ja abri um chamado ha tres dias, mas ainda nao tive retorno.
 Preciso que uma das cobrancas seja estornada com urgencia.`
   },
@@ -69,7 +70,9 @@ function persistConnection() {
 }
 
 function restoreConnection() {
-  byId("api-url").value = sessionStorage.getItem(STORAGE_KEYS.apiUrl) || DEFAULT_API_URL;
+  const storedUrl = sessionStorage.getItem(STORAGE_KEYS.apiUrl);
+  const isServedByAethra = window.location.pathname.startsWith("/app");
+  byId("api-url").value = isServedByAethra ? DEFAULT_API_URL : storedUrl || DEFAULT_API_URL;
   byId("api-key").value = sessionStorage.getItem(STORAGE_KEYS.apiKey) || "";
   byId("ngrok-header").checked = sessionStorage.getItem(STORAGE_KEYS.ngrokHeader) === "true";
 }
@@ -98,10 +101,26 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
-    const detail = payload.detail || `Erro HTTP ${response.status}`;
+    const detail = formatApiError(payload, response.status);
     throw new Error(detail);
   }
   return payload;
+}
+
+function formatApiError(payload, status) {
+  const detail = payload?.detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        const location = Array.isArray(item.loc) ? item.loc.join(".") : "body";
+        return `${location}: ${item.msg}`;
+      })
+      .join(" | ");
+  }
+  if (detail && typeof detail === "object") {
+    return detail.message || JSON.stringify(detail);
+  }
+  return detail || `Erro HTTP ${status}`;
 }
 
 function setStatus(status, text) {
@@ -122,6 +141,9 @@ async function checkHealth() {
     byId("chat-model").textContent = data.default_chat_model;
     byId("vision-model").textContent = data.default_vision_model;
     byId("vision-panel-model").textContent = data.default_vision_model;
+    byId("api-key").placeholder = data.auth_enabled
+      ? "Obrigatoria nesta API"
+      : "Autenticacao desativada";
     return true;
   } catch (error) {
     setStatus("offline", "Sem conexao");
@@ -204,10 +226,27 @@ async function submitChat(event) {
   }
 }
 
+function isEmailSummary() {
+  return byId("summary-preset").value === "email";
+}
+
+function updateSummaryMode() {
+  const emailMode = isEmailSummary();
+  byId("email-fields").hidden = !emailMode;
+  byId("summary-endpoint-label").textContent = emailMode ? "POST /summarize/email" : "POST /summarize";
+  byId("summary-text-label").textContent = emailMode ? "Corpo do e-mail" : "Conteudo para analisar";
+  byId("summary-text").placeholder = emailMode
+    ? "Cole aqui o corpo completo do e-mail..."
+    : "Cole aqui o ticket, feedback de NPS ou texto para resumo...";
+}
+
 function updateSummaryPreset(loadSample = false) {
   const preset = presets[byId("summary-preset").value];
   byId("summary-instructions").value = preset.instructions;
+  updateSummaryMode();
   if (loadSample) {
+    byId("summary-email-subject").value = preset.subject || "";
+    byId("summary-email-from").value = preset.from || "";
     byId("summary-text").value = preset.sample;
     updateSummaryCount();
   }
@@ -222,17 +261,35 @@ async function submitSummary(event) {
   const output = byId("summary-output");
   const button = byId("summary-submit");
   const start = performance.now();
+  const text = byId("summary-text").value.trim();
+  if (!text) {
+    showToast("Cole um conteudo para resumir antes de enviar.", true);
+    return;
+  }
+
+  const emailMode = isEmailSummary();
+  const body = emailMode
+    ? {
+        assunto: byId("summary-email-subject").value.trim() || undefined,
+        remetente: byId("summary-email-from").value.trim() || undefined,
+        corpo: text,
+        instrucoes: byId("summary-instructions").value.trim(),
+        max_tokens: 700
+      }
+    : {
+        texto: text,
+        instrucoes: byId("summary-instructions").value.trim(),
+        max_tokens: 700
+      };
+
   output.className = "result-output busy";
-  output.textContent = "Gerando resumo...";
+  output.textContent = emailMode ? "Gerando resumo do e-mail..." : "Gerando resumo...";
   button.disabled = true;
 
   try {
-    const result = await apiRequest("/summarize", {
+    const result = await apiRequest(emailMode ? "/summarize/email" : "/summarize", {
       method: "POST",
-      body: {
-        texto: byId("summary-text").value,
-        instrucoes: byId("summary-instructions").value
-      }
+      body
     });
     output.className = "result-output";
     output.textContent = result.resposta || "Sem resposta do modelo.";
@@ -313,17 +370,21 @@ async function copyResult(id) {
 function updateIntegrationSnippet() {
   const url = apiUrl();
   byId("integration-code").textContent = `$headers = @{
-  "X-API-Key" = "<SUA_CHAVE_PRIVADA>"
   "ngrok-skip-browser-warning" = "1"
 }
 
+# Se AUTH_ENABLED=true no backend, adicione:
+# $headers["X-API-Key"] = "<SUA_CHAVE_PRIVADA>"
+
 $body = @{
-  texto = "Conteudo do e-mail recebido pelo sistema."
+  assunto = "Problema com pagamento"
+  remetente = "cliente@empresa.com"
+  corpo = "Conteudo completo do e-mail recebido pelo sistema."
   instrucoes = "Resuma, informe prioridade e proxima acao."
 } | ConvertTo-Json
 
 Invoke-RestMethod \`
-  -Uri "${url}/summarize" \`
+  -Uri "${url}/summarize/email" \`
   -Method Post \`
   -Headers $headers \`
   -ContentType "application/json; charset=utf-8" \`
@@ -409,6 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreConnection();
   setupEvents();
   updateIntegrationSnippet();
+  updateSummaryMode();
   updateSummaryCount();
   checkHealth();
 });

@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class RootResponse(BaseModel):
@@ -14,6 +14,7 @@ class HealthResponse(BaseModel):
     api: str
     provider: str
     provider_status: str
+    auth_enabled: bool
     default_chat_model: str
     default_vision_model: str
     ollama: str = Field(
@@ -40,6 +41,31 @@ class SummarizeRequest(BaseModel):
     )
     model: str | None = Field(default=None, description="Modelo servido pelo provider ativo")
     max_tokens: int | None = Field(default=None, gt=0)
+
+
+class EmailSummarizeRequest(BaseModel):
+    """Entrada facilitada para resumir e-mails recebidos por API ou pelo frontend."""
+
+    assunto: str | None = Field(default=None, description="Assunto do e-mail, quando disponivel")
+    remetente: str | None = Field(default=None, description="Remetente do e-mail, quando disponivel")
+    corpo: str = Field(
+        ...,
+        min_length=1,
+        validation_alias=AliasChoices("corpo", "texto", "body"),
+        description="Corpo do e-mail. Tambem aceita os aliases texto ou body.",
+    )
+    instrucoes: str | None = Field(
+        default=(
+            "Resuma este e-mail, identifique o problema principal, "
+            "a prioridade e a proxima acao recomendada."
+        ),
+        validation_alias=AliasChoices("instrucoes", "objetivo", "instructions"),
+        description="Instrucoes opcionais para guiar a analise do e-mail",
+    )
+    model: str | None = Field(default=None, description="Modelo servido pelo provider ativo")
+    max_tokens: int | None = Field(default=700, gt=0)
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class VisionRequest(BaseModel):

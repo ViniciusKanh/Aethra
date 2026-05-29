@@ -1,8 +1,8 @@
 <div align="center">
 
-# Aethra
+# ✨ Aethra
 
-### API de GenAI para transformar textos, e-mails, tickets, feedbacks e imagens em respostas úteis
+### API de GenAI para chat, resumo de e-mails, tickets, NPS e visão multimodal
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -10,84 +10,105 @@
 [![vLLM](https://img.shields.io/badge/vLLM-Ready-4C6EF5)](https://docs.vllm.ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Aethra** é uma camada de serviços de Inteligência Artificial Generativa
-construída com FastAPI. Ela disponibiliza endpoints HTTP para chat,
-sumarização e análise multimodal, desacoplando os sistemas consumidores do
-motor de inferência utilizado.
+**Aethra** é uma API de Inteligência Artificial Generativa feita em **FastAPI**.
+Ela recebe textos, e-mails, tickets, feedbacks e imagens por HTTP e repassa para
+um provider de IA, como **Ollama** ou **vLLM**.
 
 </div>
 
 ---
 
-## Visão Geral
+## 🧠 O Que É A Aethra?
 
-Aethra foi projetada para integrar recursos de GenAI a outros sistemas por
-meio de uma API simples e configurável.
+Aethra é uma camada de backend para usar IA generativa em outros sistemas.
 
-Casos de uso suportados:
+Ela não é o modelo em si. Pense assim:
 
-- Resumo e priorização de e-mails.
-- Resumo e explicação de tickets de atendimento.
-- Interpretação de comentários e notas de NPS.
-- Geração de respostas em linguagem natural.
-- Descrição e análise de imagens por modelo multimodal.
-- Integração backend-to-backend com autenticação por API key.
+```text
+Seu sistema ou frontend
+        ↓
+Aethra API
+        ↓
+Provider de IA
+        ↓
+Modelo LLM ou multimodal
+```
 
-> Aethra não é um LLM. Aethra é a aplicação/API de GenAI; Ollama ou vLLM
-> servem os modelos; modelos como Llama e LLaVA executam a geração.
+Hoje o projeto está preparado para:
 
-## Recursos
+- 💬 Chat e geração de texto.
+- 📩 Resumo de e-mails.
+- 🎫 Resumo e explicação de tickets.
+- 📊 Análise de feedbacks e NPS.
+- 🖼️ Análise de imagens com modelo multimodal.
+- 🔐 Uso com ou sem API key.
+- 🌐 Exposição online usando túnel HTTPS, como ngrok.
 
-| Recurso | Descrição |
-| --- | --- |
-| API-first | Endpoints FastAPI documentados e próprios para integração |
-| Providers desacoplados | Suporte a Ollama e vLLM por variável de ambiente |
-| Texto e visão | Rotas para chat, resumo e imagens em base64 |
-| Segurança | `X-API-Key`, CORS configurável e Swagger desligável |
-| Execução local | Ollama no Windows para desenvolvimento e pilotos |
-| Escalabilidade futura | vLLM OpenAI-compatible para infraestrutura Linux/GPU |
+## ✅ Melhor Forma Gratuita Para Usar Online
 
-## Arquitetura
+Para o seu cenário atual, a forma mais simples e barata é:
+
+```text
+GitHub Pages
+   ↓
+Frontend estático
+   ↓ HTTPS
+ngrok
+   ↓
+Backend Aethra rodando no seu PC
+   ↓
+Ollama local
+   ↓
+Modelos llama3.2:3b e llava:7b
+```
+
+### Por que assim?
+
+- ✅ GitHub Pages hospeda bem HTML, CSS e JS estáticos.
+- ✅ ngrok cria uma URL HTTPS pública apontando para seu backend local.
+- ✅ Ollama continua rodando no seu Windows, usando seus modelos locais.
+- ✅ Você não precisa comprar domínio.
+- ✅ Você evita pagar GPU em cloud.
+
+### O que não recomendo agora
+
+Hospedar o modelo pesado inteiro grátis no Hugging Face, Render ou Cloud Run
+não é o melhor caminho para este projeto com Ollama local.
+
+Motivo:
+
+- GitHub Pages é apenas para site estático.
+- Hugging Face Spaces aceita Docker/FastAPI, mas o plano grátis é CPU Basic.
+- Modelos LLM locais precisam de RAM, CPU/GPU e tempo de execução estável.
+- Ollama rodando em cloud grátis tende a ficar lento, instável ou inviável.
+
+Se no futuro você quiser backend 100% cloud, o caminho ideal é trocar o
+provider para uma API externa OpenAI-compatible ou usar vLLM em infraestrutura
+com GPU.
+
+## 🔗 Referências Oficiais
+
+- GitHub Pages hospeda sites estáticos: [GitHub Pages Docs](https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages)
+- GitHub Pages publica arquivos HTML, CSS e JS do repositório: [Creating a GitHub Pages site](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
+- ngrok Free oferece um domínio dev automático para endpoints públicos: [ngrok Free Plan Limits](https://ngrok.com/docs/pricing-limits/free-plan-limits)
+- Hugging Face Spaces suporta Docker e FastAPI na porta 7860: [Docker Spaces](https://huggingface.co/docs/hub/main/spaces-sdks-docker)
+- Hugging Face Spaces grátis usa CPU Basic com 2 vCPU, 16 GB RAM e 50 GB de disco não persistente: [Spaces Overview](https://huggingface.co/docs/hub/main/en/spaces-overview)
+
+## 🧱 Arquitetura
 
 ```mermaid
 flowchart LR
-    S["Sistema terceiro<br/>ERP, CRM, Help Desk"] -->|"HTTPS + X-API-Key"| A["Aethra API<br/>FastAPI"]
-    F["Frontend opcional"] --> A
+    F["Frontend<br/>GitHub Pages ou /app"] -->|"HTTPS"| N["ngrok"]
+    S["Sistema terceiro<br/>CRM, ERP, Help Desk"] -->|"HTTPS + X-API-Key"| N
+    N --> A["Aethra API<br/>FastAPI :8080"]
     A --> P{"Provider ativo"}
-    P -->|"PROVIDER=ollama"| O["Ollama<br/>Windows / Local"]
+    P -->|"PROVIDER=ollama"| O["Ollama<br/>localhost:11434"]
     P -->|"PROVIDER=vllm"| V["vLLM<br/>OpenAI-compatible"]
     O --> M["Modelo configurado"]
     V --> M
 ```
 
-### Fluxo recomendado para integração externa
-
-```text
-Sistema terceiro -> HTTPS + X-API-Key -> Tunnel/Proxy -> Aethra :8080 -> Ollama :11434
-```
-
-O Ollama deve permanecer privado, escutando apenas localmente. Sistemas
-terceiros acessam somente a Aethra.
-
-## Endpoints
-
-| Método | Endpoint | Função | Autenticação quando `API_KEY` existe |
-| --- | --- | --- | --- |
-| `GET` | `/health` | Estado da API e do provider ativo | Pública |
-| `POST` | `/chat` | Geração de respostas textuais | `X-API-Key` |
-| `POST` | `/summarize` | Resumo e análise de textos | `X-API-Key` |
-| `POST` | `/vision` | Interpretação de imagens | `X-API-Key` |
-| `GET` | `/docs` | Swagger UI, se habilitado | Configurável |
-
-## Stack
-
-- Python 3.11+
-- FastAPI e Pydantic
-- Ollama para execução local no Windows
-- vLLM para serving OpenAI-compatible em ambientes Linux/GPU adequados
-- ngrok ou proxy HTTPS para acesso externo
-
-## Estrutura Do Projeto
+## 📁 Estrutura Do Projeto
 
 ```text
 Aethra/
@@ -118,48 +139,76 @@ Aethra/
 |   |-- .env.production.example
 |   `-- Caddyfile.example
 |-- frontend/
+|   |-- index.html
+|   |-- script.js
+|   |-- style.css
+|   `-- assets/
 |-- requirements.txt
 `-- README.md
 ```
 
-## Início Rápido No Windows Com Ollama
-
-Esta é a forma mais simples de executar a Aethra localmente.
+## 🚀 Rodando Localmente No Windows
 
 ### 1. Pré-requisitos
 
+Instale:
+
 - Python 3.11 ou superior.
-- [Ollama para Windows](https://ollama.com/download/windows).
+- Ollama para Windows.
 - PowerShell.
+- ngrok, se quiser deixar online.
 
-### 2. Baixe os modelos
+Confira o Python:
 
-Para chat e resumo:
+```powershell
+python --version
+```
+
+Confira o Ollama:
+
+```powershell
+ollama --version
+```
+
+### 2. Baixe Os Modelos No Ollama
+
+Modelo para chat e resumo:
 
 ```powershell
 ollama pull llama3.2:3b
 ```
 
-Para análise de imagens:
+Modelo para visão:
 
 ```powershell
 ollama pull llava:7b
 ```
 
-Confira os modelos instalados:
+Veja os modelos instalados:
 
 ```powershell
 ollama list
 ```
 
-### 3. Configure o ambiente local
+### 3. Configure O `.env`
 
-Crie ou ajuste `backend/.env`:
+Crie o arquivo:
+
+```powershell
+Copy-Item backend\.env.example backend\.env
+```
+
+Para desenvolvimento local, deixe `backend/.env` assim:
 
 ```dotenv
 ENVIRONMENT=development
-CORS_ORIGINS=http://localhost:5500
+AUTH_ENABLED=false
+API_KEY=
+CORS_ORIGINS=http://localhost:5500,http://127.0.0.1:8080
 ENABLE_DOCS=true
+
+FRONTEND_ENABLED=true
+FRONTEND_DIR=frontend
 
 PROVIDER=ollama
 OLLAMA_BASE_URL=http://127.0.0.1:11434
@@ -169,13 +218,13 @@ REQUEST_TIMEOUT=300
 
 APP_NAME=Aethra API
 APP_VERSION=1.0.0
-APP_DESCRIPTION=API da Aethra para chat, resumo e visao
+APP_DESCRIPTION=API da Aethra para chat, resumo e visão
 ```
 
-Em desenvolvimento, `API_KEY` pode ficar ausente para facilitar os testes
-locais.
+> 🔐 Em uso local, `AUTH_ENABLED=false` facilita os testes. Para deixar online,
+> use `AUTH_ENABLED=true`.
 
-### 4. Instale e execute a API
+### 4. Instale As Dependências
 
 Na raiz do projeto:
 
@@ -183,15 +232,21 @@ Na raiz do projeto:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-Abra:
+### 5. Inicie O Backend
 
-- Swagger local: [http://localhost:8080/docs](http://localhost:8080/docs)
-- Health check: [http://localhost:8080/health](http://localhost:8080/health)
+```powershell
+uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8080
+```
 
-Resposta esperada em `/health`:
+Abra no navegador:
+
+- Painel web: [http://127.0.0.1:8080/app/](http://127.0.0.1:8080/app/)
+- Health check: [http://127.0.0.1:8080/health](http://127.0.0.1:8080/health)
+- Swagger local: [http://127.0.0.1:8080/docs](http://127.0.0.1:8080/docs)
+
+Resposta esperada:
 
 ```json
 {
@@ -199,39 +254,201 @@ Resposta esperada em `/health`:
   "api": "online",
   "provider": "ollama",
   "provider_status": "online",
+  "auth_enabled": false,
   "default_chat_model": "llama3.2:3b",
   "default_vision_model": "llava:7b",
   "ollama": "online"
 }
 ```
 
-### 5. Execute o frontend opcional
+## 🌎 Deixando Online Sem Comprar Domínio
+
+Este é o caminho recomendado para você:
+
+```text
+Frontend no GitHub Pages
+Backend no seu PC
+ngrok expondo o backend com HTTPS
+Ollama rodando local
+```
+
+### 1. Gere Uma API Key
+
+No PowerShell:
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Copie o valor gerado.
+
+### 2. Configure Produção No Backend
+
+Edite `backend/.env`:
+
+```dotenv
+ENVIRONMENT=production
+AUTH_ENABLED=true
+API_KEY=COLE_AQUI_SUA_CHAVE_GERADA
+CORS_ORIGINS=https://SEU_USUARIO.github.io
+ENABLE_DOCS=false
+
+FRONTEND_ENABLED=true
+FRONTEND_DIR=frontend
+
+PROVIDER=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+DEFAULT_CHAT_MODEL=llama3.2:3b
+DEFAULT_VISION_MODEL=llava:7b
+REQUEST_TIMEOUT=300
+
+APP_NAME=Aethra API
+APP_VERSION=1.0.0
+APP_DESCRIPTION=API da Aethra para chat, resumo e visão
+```
+
+Se o seu GitHub Pages ficar em URL de projeto, use:
+
+```dotenv
+CORS_ORIGINS=https://SEU_USUARIO.github.io,https://SEU_USUARIO.github.io/NOME_DO_REPOSITORIO
+```
+
+> ⚠️ Nunca suba `backend/.env` para o GitHub.
+
+### 3. Rode O Backend Em Modo Produção
+
+```powershell
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
+```
+
+### 4. Inicie O ngrok
 
 Em outro terminal:
 
 ```powershell
-cd frontend
-python -m http.server 5500
+ngrok http http://127.0.0.1:8080
 ```
 
-Abra [http://localhost:5500](http://localhost:5500).
+O ngrok vai mostrar algo parecido com:
 
-> O frontend atual é uma interface simples para chat. A rota `/vision` deve
-> ser consumida diretamente pela API até que um upload de imagens seja
-> implementado na interface.
+```text
+Forwarding  https://seu-endpoint.ngrok-free.dev -> http://localhost:8080
+```
 
-## Utilização Da API
+Essa URL HTTPS é a URL pública da sua API.
+
+### 5. Teste Pela Internet
+
+Troque a URL abaixo pela sua URL do ngrok:
+
+```powershell
+$url = "https://SEU_ENDPOINT.ngrok-free.dev"
+
+$headers = @{
+  "X-API-Key" = "SUA_API_KEY"
+  "ngrok-skip-browser-warning" = "1"
+}
+
+$body = @{
+  assunto = "Cobrança duplicada"
+  remetente = "cliente@empresa.com"
+  corpo = "Cliente informa cobrança duplicada e solicita estorno urgente."
+  instrucoes = "Resuma o e-mail e informe prioridade."
+} | ConvertTo-Json
+
+(Invoke-RestMethod `
+  -Uri "$url/summarize/email" `
+  -Method Post `
+  -Headers $headers `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
+```
+
+## 🖥️ Publicando O Frontend No GitHub Pages
+
+O frontend da Aethra está na pasta `frontend/`.
+
+A forma mais fácil é criar um repositório separado só para o front.
+
+### Opção Simples
+
+1. Crie um repositório no GitHub, por exemplo `aethra-front`.
+2. Envie para esse repositório os arquivos dentro da pasta `frontend/`:
+   - `index.html`
+   - `style.css`
+   - `script.js`
+   - `assets/`
+3. No GitHub, vá em:
+
+```text
+Settings → Pages → Build and deployment
+```
+
+4. Escolha:
+
+```text
+Source: Deploy from a branch
+Branch: main
+Folder: /root
+```
+
+5. O GitHub vai gerar uma URL parecida com:
+
+```text
+https://SEU_USUARIO.github.io/aethra-front/
+```
+
+### Configurando O Front Publicado
+
+Abra o front no GitHub Pages e preencha:
+
+```text
+URL da API: https://SEU_ENDPOINT.ngrok-free.dev
+X-API-Key: SUA_API_KEY
+```
+
+Marque:
+
+```text
+Enviar header auxiliar do ngrok
+```
+
+Depois clique em:
+
+```text
+Aplicar
+```
+
+Pronto. O front no GitHub Pages vai chamar o backend que está rodando no seu PC.
+
+## 🧪 Testando A API
+
+### Health
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:8080/health"
+```
+
+Com ngrok:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "https://SEU_ENDPOINT.ngrok-free.dev/health" `
+  -Headers @{ "ngrok-skip-browser-warning" = "1" }
+```
 
 ### Chat
 
 ```powershell
 $body = @{
-  pergunta = "Explique em poucas palavras o que é NPS."
+  pergunta = "Explique o que é NPS em poucas palavras."
   temperatura = 0.2
 } | ConvertTo-Json
 
 Invoke-RestMethod `
-  -Uri "http://localhost:8080/chat" `
+  -Uri "http://127.0.0.1:8080/chat" `
   -Method Post `
   -ContentType "application/json; charset=utf-8" `
   -Body ([Text.Encoding]::UTF8.GetBytes($body))
@@ -241,10 +458,9 @@ Invoke-RestMethod `
 
 ```powershell
 $body = @{
-  texto = @"
-Assunto: Cobrança duplicada
-De: cliente@empresa.com
-
+  assunto = "Problema com pagamento"
+  remetente = "cliente@empresa.com"
+  corpo = @"
 Olá, identifiquei duas cobranças iguais em minha fatura deste mês.
 Já abri um chamado há três dias, mas ainda não tive retorno.
 Preciso que uma das cobranças seja estornada com urgência.
@@ -253,7 +469,7 @@ Preciso que uma das cobranças seja estornada com urgência.
 } | ConvertTo-Json
 
 $resposta = Invoke-RestMethod `
-  -Uri "http://localhost:8080/summarize" `
+  -Uri "http://127.0.0.1:8080/summarize/email" `
   -Method Post `
   -ContentType "application/json; charset=utf-8" `
   -Body ([Text.Encoding]::UTF8.GetBytes($body))
@@ -261,24 +477,22 @@ $resposta = Invoke-RestMethod `
 $resposta.resposta
 ```
 
-### Resumo A Partir De Arquivo
+### Resumo De Texto Geral
 
 ```powershell
-$email = Get-Content "C:\Temp\email.txt" -Raw -Encoding UTF8
-
 $body = @{
-  texto = $email
-  instrucoes = "Gere um resumo executivo, classifique urgência e sugira o próximo passo."
+  texto = "Cliente deu nota NPS 3 e reclamou de atraso no suporte."
+  instrucoes = "Explique o sentimento, risco e ação recomendada."
 } | ConvertTo-Json
 
 (Invoke-RestMethod `
-  -Uri "http://localhost:8080/summarize" `
+  -Uri "http://127.0.0.1:8080/summarize" `
   -Method Post `
   -ContentType "application/json; charset=utf-8" `
   -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
 ```
 
-### Imagem
+### Vision
 
 ```powershell
 $imagem = [Convert]::ToBase64String(
@@ -292,17 +506,27 @@ $body = @{
 } | ConvertTo-Json
 
 (Invoke-RestMethod `
-  -Uri "http://localhost:8080/vision" `
+  -Uri "http://127.0.0.1:8080/vision" `
   -Method Post `
   -ContentType "application/json; charset=utf-8" `
   -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
 ```
 
-## Contratos JSON
+## 📡 Endpoints
+
+| Método | Endpoint | Função | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/health` | Status da API e do provider | Público |
+| `POST` | `/chat` | Geração de texto e conversa | `X-API-Key` se auth ativa |
+| `POST` | `/summarize` | Resumo de texto geral, ticket ou NPS | `X-API-Key` se auth ativa |
+| `POST` | `/summarize/email` | Resumo facilitado de e-mail | `X-API-Key` se auth ativa |
+| `POST` | `/vision` | Análise de imagem base64 | `X-API-Key` se auth ativa |
+| `GET` | `/app/` | Frontend local servido pelo backend | Depende da configuração |
+| `GET` | `/docs` | Swagger UI | Só se `ENABLE_DOCS=true` |
+
+## 📦 Contratos JSON
 
 ### `POST /chat`
-
-Requisição:
 
 ```json
 {
@@ -315,19 +539,29 @@ Requisição:
 
 ### `POST /summarize`
 
-Requisição:
+```json
+{
+  "texto": "Conteúdo completo do ticket, NPS ou texto geral.",
+  "instrucoes": "Resuma, classifique prioridade e indique próxima ação.",
+  "max_tokens": 700
+}
+```
+
+### `POST /summarize/email`
+
+Aceita `corpo`, `texto` ou `body`.
 
 ```json
 {
-  "texto": "Conteúdo completo do e-mail, ticket ou feedback.",
-  "instrucoes": "Resuma, classifique prioridade e indique próxima ação.",
-  "max_tokens": 400
+  "assunto": "Cobrança duplicada",
+  "remetente": "cliente@empresa.com",
+  "corpo": "Corpo completo do e-mail.",
+  "instrucoes": "Resuma, informe prioridade e próxima ação.",
+  "max_tokens": 700
 }
 ```
 
 ### `POST /vision`
-
-Requisição:
 
 ```json
 {
@@ -338,7 +572,7 @@ Requisição:
 }
 ```
 
-### Resposta Das Rotas Generativas
+### Resposta Padrão
 
 ```json
 {
@@ -351,178 +585,71 @@ Requisição:
 }
 ```
 
-## E-Mails Grandes
+## 🔐 Segurança
 
-O conteúdo do e-mail deve ser enviado no corpo da requisição. Isso é esperado
-em integrações de API. O limite relevante é a janela de contexto do modelo,
-não a URL.
-
-Para e-mails longos ou threads extensas, recomenda-se:
-
-1. Remover HTML desnecessário, assinaturas repetidas e imagens embutidas.
-2. Extrair assunto, remetente, data e corpo principal.
-3. Dividir textos muito grandes em partes.
-4. Resumir cada parte e gerar um resumo consolidado.
-
-O processamento automático em partes ainda não está implementado nesta
-versão da Aethra.
-
-## Segurança E Produção
-
-Quando `API_KEY` estiver configurada, as rotas `/chat`, `/summarize` e
-`/vision` exigem o header:
-
-```http
-X-API-Key: SUA_CHAVE_PRIVADA
-```
-
-Em `ENVIRONMENT=production`, a aplicação:
-
-- Exige uma `API_KEY` com pelo menos 32 caracteres.
-- Rejeita `CORS_ORIGINS=*`.
-- Pode ocultar Swagger e OpenAPI com `ENABLE_DOCS=false`.
-
-### Gere uma chave segura
-
-```powershell
-$bytes = New-Object byte[] 32
-[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
-[Convert]::ToBase64String($bytes)
-```
-
-Nunca publique essa chave em documentação, commits, frontend ou mensagens.
-Se uma chave for exibida publicamente, gere uma nova e substitua-a em todos
-os consumidores.
-
-### Configure produção com Ollama
-
-Copie o template:
-
-```powershell
-Copy-Item deployment\.env.production.example backend\.env
-```
-
-Edite `backend/.env`:
+### Modo Local Simples
 
 ```dotenv
-ENVIRONMENT=production
-API_KEY=<NOVA_CHAVE_SEGURA>
-CORS_ORIGINS=
-ENABLE_DOCS=false
-
-PROVIDER=ollama
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-DEFAULT_CHAT_MODEL=llama3.2:3b
-DEFAULT_VISION_MODEL=llava:7b
-REQUEST_TIMEOUT=300
-
-APP_NAME=Aethra API
-APP_VERSION=1.0.0
-APP_DESCRIPTION=API da Aethra para chat, resumo e visao
+AUTH_ENABLED=false
+API_KEY=
 ```
 
-O arquivo `backend/.env` contém segredo. Caso já tenha sido adicionado ao
-Git em uma versão anterior, remova-o do índice antes de gravar chaves:
+Use somente localmente ou em rede confiável.
 
-```powershell
-git rm --cached backend/.env
+### Modo Online Recomendado
+
+```dotenv
+AUTH_ENABLED=true
+API_KEY=SUA_CHAVE_GRANDE_E_SECRETA
 ```
 
-Execute a API sem reload e exponha apenas localmente para o túnel ou proxy:
+Nesse modo, envie sempre:
+
+```http
+X-API-Key: SUA_CHAVE_GRANDE_E_SECRETA
+```
+
+### Cuidados Importantes
+
+- 🚫 Não coloque API key no GitHub.
+- 🚫 Não coloque API key fixa em frontend público.
+- ✅ Para testes pessoais no front, digite a key no campo da tela.
+- ✅ Se uma key vazou, gere outra.
+- ✅ Deixe `ENABLE_DOCS=false` em produção.
+- ✅ Configure `CORS_ORIGINS` com a URL real do seu GitHub Pages.
+
+## 🧰 Comandos Rápidos
+
+Use três terminais.
+
+### Terminal 1: Ollama
 
 ```powershell
+ollama serve
+```
+
+Se o Ollama já estiver rodando como serviço, esse comando pode não ser
+necessário.
+
+### Terminal 2: Backend
+
+```powershell
+cd "D:\Modelos LLMs\Aethra"
+.\.venv\Scripts\Activate.ps1
 uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
 ```
 
-## Publicação Sem Domínio Com Ngrok
-
-Para piloto, demonstração ou baixo volume, o ngrok permite disponibilizar a
-API por HTTPS sem comprar domínio.
-
-### 1. Instale e autentique o ngrok
-
-Baixe o agente para Windows:
-
-- [ngrok para Windows](https://ngrok.com/download/windows/)
-
-Configure seu token do ngrok:
+### Terminal 3: ngrok
 
 ```powershell
-ngrok config add-authtoken "<AUTHTOKEN_DO_NGROK>"
+ngrok http http://127.0.0.1:8080
 ```
 
-### 2. Publique a API local
+## 🧠 Provider vLLM
 
-Com Ollama e Aethra rodando:
+Aethra também suporta vLLM com API compatível com OpenAI.
 
-```powershell
-ngrok http 8080
-```
-
-O ngrok exibirá uma URL HTTPS pública. Use a URL exibida pelo seu terminal;
-ela não deve ser fixada no código do projeto.
-
-### 3. Consuma externamente
-
-```powershell
-$url = "https://<URL_FORNECIDA_PELO_NGROK>"
-$headers = @{
-  "X-API-Key" = "<SUA_CHAVE_DA_AETHRA>"
-  "ngrok-skip-browser-warning" = "1"
-}
-
-$body = @{
-  texto = "Cliente informa cobrança duplicada e solicita estorno urgente."
-  instrucoes = "Resuma o e-mail e informe prioridade."
-} | ConvertTo-Json
-
-(Invoke-RestMethod `
-  -Uri "$url/summarize" `
-  -Method Post `
-  -Headers $headers `
-  -ContentType "application/json; charset=utf-8" `
-  -Body ([Text.Encoding]::UTF8.GetBytes($body))).resposta
-```
-
-O plano gratuito do ngrok é adequado para validação e operações pequenas,
-mas possui limites de uso e não substitui hospedagem com SLA.
-
-## Integração Em JavaScript
-
-Este exemplo deve rodar em um backend, nunca em JavaScript entregue ao
-navegador, pois contém a chave privada.
-
-```javascript
-const response = await fetch(`${process.env.AETHRA_URL}/summarize`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "X-API-Key": process.env.AETHRA_API_KEY,
-    "ngrok-skip-browser-warning": "1"
-  },
-  body: JSON.stringify({
-    texto: emailContent,
-    instrucoes: "Resuma o e-mail, informe prioridade e próxima ação."
-  })
-});
-
-if (!response.ok) {
-  throw new Error(`Aethra retornou HTTP ${response.status}`);
-}
-
-const result = await response.json();
-console.log(result.resposta);
-```
-
-## Provider vLLM
-
-Aethra também suporta vLLM por meio da API OpenAI-compatible:
-
-- Health check do provider: `/v1/models`
-- Geração e resumo: `/v1/chat/completions`
-- Visão: mensagens multimodais OpenAI-style
-
-Configuração:
+Exemplo:
 
 ```dotenv
 PROVIDER=vllm
@@ -532,38 +659,50 @@ DEFAULT_CHAT_MODEL=meta-llama/Llama-4-Scout-17B-16E-Instruct
 DEFAULT_VISION_MODEL=meta-llama/Llama-4-Scout-17B-16E-Instruct
 ```
 
-O vLLM é indicado para infraestrutura Linux com GPU adequada. Modelos
-grandes, como Llama-4-Scout, exigem recursos significativamente superiores a
-uma GPU de notebook e podem requerer pesos em formato compatível com serving.
+Exemplo de execução do vLLM:
 
-## Troubleshooting
+```powershell
+vllm serve "D:\Modelos LLMs\Llama-4-Scout-17B-16E-Instruct" --host 0.0.0.0 --port 8000
+```
 
-| Sintoma | Causa provável | Solução |
+> ⚠️ vLLM é mais indicado em Linux com GPU adequada. Para Windows local,
+> Ollama é o caminho mais simples.
+
+## 🧯 Troubleshooting
+
+| Problema | Causa provável | Como resolver |
 | --- | --- | --- |
-| `/health` retorna `degraded` | Provider não está ativo | Inicie Ollama ou vLLM e confira o `.env` |
-| `502 Bad Gateway` | Modelo/provider indisponível | Execute `ollama list`, baixe o modelo e reinicie a API |
-| `401 Unauthorized` | API key ausente ou incorreta | Envie `X-API-Key` com a chave configurada |
-| Erro ao analisar JSON com acentos | Encoding do PowerShell | Envie `UTF8.GetBytes($body)` e `charset=utf-8` |
-| `/vision` demora muito | Modelo visual pesado para a GPU | Aguarde ou use hardware/modelo mais adequado |
-| `GET /chat` retorna `405` | Rota aceita somente POST | Use `POST` com JSON no body |
-| `/docs` retorna `404` | Docs desabilitada em produção | Use `ENABLE_DOCS=true` somente em ambiente controlado |
+| `/health` mostra `degraded` | Ollama ou vLLM offline | Abra o Ollama e confira `ollama list` |
+| `provider_status` está `offline` | URL do provider errada | Confira `OLLAMA_BASE_URL` ou `VLLM_BASE_URL` |
+| `502 Bad Gateway` | Modelo não respondeu | Baixe o modelo com `ollama pull` e reinicie a API |
+| `401 Unauthorized` | API key ausente ou incorreta | Envie `X-API-Key` correta |
+| Front no GitHub Pages não chama API | CORS bloqueando | Configure `CORS_ORIGINS` com a URL do GitHub Pages |
+| Front chama `localhost` no GitHub Pages | URL da API errada na tela | Coloque a URL HTTPS do ngrok no campo `URL da API` |
+| ngrok mostra tela de aviso | Interstitial do plano grátis | Envie header `ngrok-skip-browser-warning: 1` |
+| Acentos quebrados no PowerShell | Encoding incorreto | Use `charset=utf-8` e `UTF8.GetBytes($body)` |
+| `/docs` retorna 404 | Docs desativada | Use `ENABLE_DOCS=true` apenas em ambiente local |
+| `GET /chat` retorna 405 | Rota aceita POST | Use `POST` com JSON no body |
+| Resumo demora muito | Modelo local lento | Aguarde ou use modelo menor |
 
-## Limitações Atuais E Próximos Passos
+## 🚧 Limitações Atuais
 
-- O frontend atual atende chat simples; ainda não envia imagens.
-- Não há chunking automático para e-mails muito longos.
-- Não há integração direta com Outlook, Gmail ou filas de mensagens.
-- Para uso crítico, ainda são recomendados rate limiting, auditoria,
-  observabilidade, rotação de chaves e infraestrutura dedicada.
+- Não existe chunking automático para e-mails gigantes.
+- O front público não deve guardar API key em código.
+- O ngrok grátis tem limites mensais.
+- Para SLA real, use VPS, Cloud Run, Render pago, GPU cloud ou provider externo.
+- Para modelos grandes como Llama-4-Scout, use infraestrutura adequada.
 
-Evoluções naturais:
+## 🗺️ Próximos Passos Naturais
 
-- Upload e processamento de arquivos `.eml` e `.txt`.
-- Sumarização hierárquica de conversas extensas.
-- Endpoints orientados a tickets e NPS com saída estruturada.
-- Integração por `message_id` com provedores de e-mail.
-- Métricas, logs de auditoria e limites por consumidor.
+- 📄 Upload de `.txt`, `.eml` e PDFs.
+- 🧩 Chunking automático para textos longos.
+- 🎫 Endpoint dedicado para tickets.
+- 📊 Endpoint dedicado para NPS com saída estruturada.
+- 📈 Logs, métricas e auditoria.
+- 🚦 Rate limit por consumidor.
+- 🔁 Rotação de API keys.
+- 🐳 Dockerfile pronto para deploy.
 
-## Licença
+## 📜 Licença
 
 Distribuído sob licença MIT. Consulte [LICENSE](LICENSE).

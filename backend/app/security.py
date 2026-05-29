@@ -12,7 +12,11 @@ def require_api_key(
 ) -> None:
     """Valida o consumidor da API quando uma chave foi configurada."""
 
-    configured_api_key = request.app.state.settings.api_key
+    settings = request.app.state.settings
+    if not settings.auth_enabled:
+        return
+
+    configured_api_key = settings.api_key
     if not configured_api_key:
         return
 
