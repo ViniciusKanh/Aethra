@@ -22,6 +22,66 @@ class HealthResponse(BaseModel):
     )
 
 
+class AdminConfigResponse(BaseModel):
+    environment: str
+    provider: str
+    chat_model: str
+    vision_model: str
+    request_timeout: int
+    auth_enabled: bool
+    admin_enabled: bool
+    dw_enabled: bool
+    dw_host: str | None
+    dw_port: int | None
+    dw_database: str | None
+    dw_user: str | None
+    dw_password_configured: bool
+    dw_sslmode: str | None
+    dw_allowed_schemas: list[str]
+    dw_table_prefixes: list[str]
+    dw_statement_timeout_ms: int
+    dw_max_rows: int
+
+
+class DwColumn(BaseModel):
+    name: str
+    data_type: str
+    nullable: bool
+
+
+class DwTable(BaseModel):
+    schema_name: str
+    table_name: str
+    table_type: str
+    columns: list[DwColumn]
+
+
+class DwSchemaResponse(BaseModel):
+    status: str
+    database: str
+    user: str
+    tables: list[DwTable]
+    cached: bool = False
+
+
+class DwQuestionRequest(BaseModel):
+    pergunta: str = Field(..., min_length=3, max_length=2_000)
+    model: str | None = None
+    max_rows: int | None = Field(default=None, ge=1, le=2_000)
+
+
+class DwQueryResponse(BaseModel):
+    status: str
+    model: str
+    resposta: str
+    sql: str
+    columns: list[str]
+    rows: list[list[Any]]
+    row_count: int
+    truncated: bool
+    metadados: dict[str, Any]
+
+
 class ChatRequest(BaseModel):
     pergunta: str = Field(..., min_length=1, description="Pergunta enviada pelo usuario")
     system_prompt: str | None = Field(

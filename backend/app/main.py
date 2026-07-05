@@ -5,8 +5,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import Settings, get_settings
 from .providers import ProviderError, create_provider
-from .routes import chat_router, health_router, summarize_router, vision_router
-from .services import ChatService, SummarizeService, VisionService
+from .routes import admin_router, chat_router, health_router, summarize_router, vision_router, warehouse_router
+from .services import ChatService, SummarizeService, VisionService, WarehouseError, WarehouseService
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -29,7 +29,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=active_settings.allowed_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "X-API-Key", "ngrok-skip-browser-warning"],
+        allow_headers=["Content-Type", "X-API-Key", "X-Admin-Key", "ngrok-skip-browser-warning"],
     )
 
     app.state.settings = active_settings
@@ -37,15 +37,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.chat_service = ChatService(provider, active_settings)
     app.state.summarize_service = SummarizeService(provider, active_settings)
     app.state.vision_service = VisionService(provider, active_settings)
+    app.state.warehouse_service = WarehouseService(provider, active_settings)
 
     @app.exception_handler(ProviderError)
     async def provider_error_handler(_: Request, exc: ProviderError) -> JSONResponse:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(WarehouseError)
+    async def warehouse_error_handler(_: Request, exc: WarehouseError) -> JSONResponse:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     app.include_router(health_router)
     app.include_router(chat_router)
     app.include_router(summarize_router)
     app.include_router(vision_router)
+    app.include_router(warehouse_router)
+    app.include_router(admin_router)
 
     frontend_dir = active_settings.resolved_frontend_dir
     if active_settings.frontend_enabled and frontend_dir.exists():

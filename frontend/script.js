@@ -1,102 +1,59 @@
 const HF_SPACE_API_URL = "https://viniciuskhan-aethra.hf.space";
 
-function resolveDefaultApiUrl() {
-  const isHttp = window.location.protocol.startsWith("http");
-  const host = window.location.hostname;
-
-  if (!isHttp) {
-    return "http://localhost:8080";
-  }
-  if (host.endsWith("github.io")) {
-    return HF_SPACE_API_URL;
-  }
-  if (window.location.pathname.startsWith("/app")) {
-    return window.location.origin;
-  }
-  if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
-    return "http://localhost:8080";
-  }
-  return window.location.origin;
-}
-
-const DEFAULT_API_URL = resolveDefaultApiUrl();
-const STORAGE_KEYS = {
-  apiUrl: "aethra.apiUrl",
-  ngrokHeader: "aethra.ngrokHeader"
-};
-
-const state = {
-  image: null,
-  toastTimer: null
+const viewMeta = {
+  overview: ["Aethra Workspace", "Visão geral"],
+  chat: ["Modelo generativo", "Chat GenAI"],
+  warehouse: ["Dados corporativos", "DW Insights"],
+  summary: ["Operações", "Resumos inteligentes"],
+  vision: ["Multimodal", "Vision Lab"],
+  "api-docs": ["Desenvolvimento", "API & Integrações"],
+  admin: ["Área restrita", "Configurações do backend"]
 };
 
 const presets = {
   email: {
-    instructions: "Resuma este e-mail, identifique o problema principal, a prioridade e a proxima acao recomendada.",
-    subject: "Cobranca duplicada",
+    instructions: "Resuma este e-mail, identifique o problema principal, a prioridade e a próxima ação recomendada.",
+    subject: "Cobrança duplicada",
     from: "cliente@empresa.com",
-    sample: `Ola, identifiquei duas cobrancas iguais em minha fatura deste mes.
-Ja abri um chamado ha tres dias, mas ainda nao tive retorno.
-Preciso que uma das cobrancas seja estornada com urgencia.`
+    sample: "Olá, identifiquei duas cobranças iguais em minha fatura deste mês. Já abri um chamado há três dias, mas ainda não tive retorno. Preciso que uma das cobranças seja estornada com urgência."
   },
   ticket: {
-    instructions: "Resuma o ticket, classifique o impacto, indique a causa relatada e proponha o proximo passo de atendimento.",
-    sample: `Ticket #8452 - Falha ao emitir nota fiscal
-Cliente informa que, desde ontem, pedidos aprovados nao geram nota fiscal.
-O erro afeta 18 pedidos e impede o envio das mercadorias.`
+    instructions: "Resuma o ticket, classifique o impacto, identifique a causa relatada e proponha o próximo passo.",
+    sample: "Ticket #8452 — Falha ao emitir nota fiscal. Desde ontem, pedidos aprovados não geram nota. O erro afeta 18 pedidos e impede o envio das mercadorias."
   },
   nps: {
-    instructions: "Explique o feedback de NPS, identifique sentimento, risco de churn e uma acao de recuperacao.",
-    sample: `Nota NPS: 3
-Comentario: O produto funciona, mas precisei falar tres vezes com o suporte para resolver uma cobranca incorreta. Nao pretendo renovar se continuar assim.`
+    instructions: "Explique o feedback, identifique sentimento, risco de churn e uma ação de recuperação.",
+    sample: "Nota NPS: 3. O produto funciona, mas precisei falar três vezes com o suporte para resolver uma cobrança incorreta. Não pretendo renovar se continuar assim."
   },
   executive: {
-    instructions: "Produza um resumo executivo curto com situacao, impacto, urgencia e decisao recomendada.",
-    sample: `A equipe comercial reportou aumento de reclamacoes por atraso no retorno.
-Foram identificados 42 tickets abertos ha mais de 72 horas, incluindo nove clientes corporativos em renovacao contratual.`
+    instructions: "Produza um resumo executivo com situação, impacto, urgência e decisão recomendada.",
+    sample: "A equipe comercial reportou aumento de reclamações por atraso no retorno. Há 42 tickets abertos há mais de 72 horas, incluindo nove clientes corporativos em renovação."
   }
+};
+
+const state = {
+  adminKey: "",
+  adminConfig: null,
+  image: null,
+  pendingAdminView: "admin",
+  toastTimer: null
 };
 
 function byId(id) {
   return document.getElementById(id);
 }
 
-function maybeById(id) {
-  return document.getElementById(id);
+function resolveDefaultApiUrl() {
+  const host = window.location.hostname;
+  if (!window.location.protocol.startsWith("http")) return "http://localhost:8080";
+  if (host.endsWith("github.io")) return HF_SPACE_API_URL;
+  if (window.location.pathname.startsWith("/app")) return window.location.origin;
+  if (["localhost", "127.0.0.1", "::1"].includes(host)) return "http://localhost:8080";
+  return window.location.origin;
 }
 
 function apiUrl() {
-  return byId("api-url").value.trim().replace(/\/+$/, "") || DEFAULT_API_URL;
-}
-
-function requestHeaders(includeContentType = true) {
-  const headers = {};
-  if (includeContentType) {
-    headers["Content-Type"] = "application/json";
-  }
-  const ngrokInput = maybeById("ngrok-header");
-  if (ngrokInput?.checked) {
-    headers["ngrok-skip-browser-warning"] = "1";
-  }
-  return headers;
-}
-
-function persistConnection() {
-  sessionStorage.setItem(STORAGE_KEYS.apiUrl, apiUrl());
-  const ngrokInput = maybeById("ngrok-header");
-  sessionStorage.setItem(STORAGE_KEYS.ngrokHeader, String(Boolean(ngrokInput?.checked)));
-  updateIntegrationSnippet();
-}
-
-function restoreConnection() {
-  const storedUrl = sessionStorage.getItem(STORAGE_KEYS.apiUrl);
-  const isServedByAethra = window.location.pathname.startsWith("/app");
-  const isGithubPages = window.location.hostname.endsWith("github.io");
-  byId("api-url").value = isServedByAethra || isGithubPages ? DEFAULT_API_URL : storedUrl || DEFAULT_API_URL;
-  const ngrokInput = maybeById("ngrok-header");
-  if (ngrokInput) {
-    ngrokInput.checked = sessionStorage.getItem(STORAGE_KEYS.ngrokHeader) === "true";
-  }
+  return byId("api-url").value.trim().replace(/\/+$/, "") || resolveDefaultApiUrl();
 }
 
 function showToast(message, isError = false) {
@@ -105,166 +62,142 @@ function showToast(message, isError = false) {
   toast.classList.toggle("error", isError);
   toast.classList.add("show");
   window.clearTimeout(state.toastTimer);
-  state.toastTimer = window.setTimeout(() => toast.classList.remove("show"), 3300);
+  state.toastTimer = window.setTimeout(() => toast.classList.remove("show"), 3600);
 }
 
-async function apiRequest(path, options = {}) {
-  const response = await fetch(`${apiUrl()}${path}`, {
-    method: options.method || "GET",
-    headers: requestHeaders(Boolean(options.body)),
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
-
-  let payload;
-  try {
-    payload = await response.json();
-  } catch (_error) {
-    payload = { detail: "A API retornou uma resposta que nao e JSON." };
-  }
-
-  if (!response.ok) {
-    const detail = formatApiError(payload, response.status);
-    throw new Error(detail);
-  }
-  return payload;
-}
-
-function formatApiError(payload, status) {
+function errorMessage(payload, status) {
   const detail = payload?.detail;
-  if (Array.isArray(detail)) {
-    return detail
-      .map((item) => {
-        const location = Array.isArray(item.loc) ? item.loc.join(".") : "body";
-        return `${location}: ${item.msg}`;
-      })
-      .join(" | ");
-  }
-  if (detail && typeof detail === "object") {
-    return detail.message || JSON.stringify(detail);
-  }
+  if (Array.isArray(detail)) return detail.map((item) => item.msg).join(" · ");
+  if (detail && typeof detail === "object") return detail.message || JSON.stringify(detail);
   return detail || `Erro HTTP ${status}`;
 }
 
-function setStatus(status, text) {
-  const pill = byId("header-status");
-  pill.className = `status-pill ${status}`;
-  pill.querySelector("span:last-child").textContent = text;
+async function apiRequest(path, options = {}) {
+  const headers = {};
+  if (options.body) headers["Content-Type"] = "application/json";
+  if (options.admin) {
+    if (!state.adminKey) throw new Error("Sessão administrativa não autenticada.");
+    headers["X-Admin-Key"] = state.adminKey;
+  }
+  const response = await fetch(`${apiUrl()}${path}`, {
+    method: options.method || "GET",
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  let payload;
+  try { payload = await response.json(); } catch (_error) { payload = { detail: "A API não retornou JSON." }; }
+  if (!response.ok) throw new Error(errorMessage(payload, response.status));
+  return payload;
+}
+
+function navigate(viewName) {
+  if (["warehouse", "admin"].includes(viewName) && !state.adminKey) {
+    state.pendingAdminView = viewName;
+    openAdminDialog();
+    return;
+  }
+  document.querySelectorAll("[data-view-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.viewPanel === viewName));
+  document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === viewName));
+  const [kicker, title] = viewMeta[viewName] || viewMeta.overview;
+  byId("view-kicker").textContent = kicker;
+  byId("view-title").textContent = title;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function setHealthVisual(mode, label) {
+  const header = byId("header-status");
+  header.className = `health-chip ${mode}`.trim();
+  header.querySelector("span").textContent = label;
+  const dots = [byId("sidebar-status-dot"), byId("runtime-dot")];
+  dots.forEach((dot) => { dot.className = `live-dot ${mode}`.trim(); });
+  byId("sidebar-status").textContent = label;
 }
 
 async function checkHealth() {
-  setStatus("waiting", "Verificando");
-  byId("api-status").textContent = "Verificando...";
+  setHealthVisual("waiting", "Verificando");
   try {
     const data = await apiRequest("/health");
     const online = data.provider_status === "online";
-    setStatus(online ? "" : "offline", online ? "Online" : "Provider offline");
-    byId("api-status").textContent = online ? "Online" : "Indisponivel";
-    byId("header-provider").textContent = `Provider: ${data.provider}`;
-    byId("chat-model").textContent = data.default_chat_model;
-    byId("vision-model").textContent = data.default_vision_model;
+    setHealthVisual(online ? "" : "offline", online ? "Online" : "Provider offline");
+    byId("provider-chip").textContent = `${data.provider} · ${online ? "ready" : "offline"}`;
+    byId("overview-model").textContent = data.default_chat_model;
+    byId("overview-provider").textContent = `via ${data.provider}`;
+    byId("runtime-api").textContent = "Online";
+    byId("runtime-provider").textContent = data.provider;
+    byId("runtime-vision").textContent = data.default_vision_model;
+    byId("runtime-auth").textContent = data.auth_enabled ? "API privada" : "API aberta";
+    byId("chat-context-model").textContent = data.default_chat_model;
     byId("vision-panel-model").textContent = data.default_vision_model;
-    byId("auth-mode").textContent = data.auth_enabled ? "Privada" : "Aberta";
     return true;
   } catch (error) {
-    setStatus("offline", "Sem conexao");
-    byId("api-status").textContent = "Falha de conexao";
-    byId("header-provider").textContent = "Provider: --";
-    showToast(`Nao foi possivel conectar: ${error.message}`, true);
+    setHealthVisual("offline", "Sem conexão");
+    byId("runtime-api").textContent = "Indisponível";
+    byId("provider-chip").textContent = "Provider —";
+    showToast(error.message, true);
     return false;
   }
 }
 
-function updateExecution(result, startTime) {
-  const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+function updateExecution(result, startedAt) {
+  const elapsed = ((performance.now() - startedAt) / 1000).toFixed(1);
   byId("last-latency").textContent = `${elapsed}s`;
-  byId("last-model").textContent = result.model || "Modelo nao informado";
+  byId("last-model").textContent = result.model || "Modelo não informado";
 }
 
-function openTab(tabName) {
-  document.querySelectorAll(".tab").forEach((button) => {
-    button.classList.toggle("active", button.dataset.tab === tabName);
-  });
-  document.querySelectorAll(".tab-panel").forEach((panel) => {
-    panel.classList.toggle("active", panel.dataset.panel === tabName);
-  });
-}
-
-function appendMessage(role, content, loading = false) {
-  const messages = byId("chat-messages");
+function appendChatMessage(role, content, loading = false) {
   const article = document.createElement("article");
-  article.className = `bubble ${role}${loading ? " loading" : ""}`;
-
+  article.className = `message ${role}${loading ? " loading" : ""}`;
   const avatar = document.createElement("span");
-  avatar.className = "bubble-avatar";
+  avatar.className = "avatar";
   avatar.textContent = role === "assistant" ? "A" : "V";
-
-  const wrapper = document.createElement("div");
+  const body = document.createElement("div");
   const label = document.createElement("small");
-  label.textContent = role === "assistant" ? "Aethra" : "Voce";
+  label.textContent = role === "assistant" ? "Aethra" : "Você";
   const paragraph = document.createElement("p");
   paragraph.textContent = content;
-  wrapper.append(label, paragraph);
-  article.append(avatar, wrapper);
-  messages.appendChild(article);
-  messages.scrollTop = messages.scrollHeight;
+  body.append(label, paragraph);
+  article.append(avatar, body);
+  byId("chat-messages").appendChild(article);
+  byId("chat-messages").scrollTop = byId("chat-messages").scrollHeight;
   return article;
 }
 
 async function submitChat(event) {
   event.preventDefault();
-  const input = byId("chat-prompt");
-  const prompt = input.value.trim();
-  if (!prompt) {
-    return;
-  }
-
-  appendMessage("user", prompt);
-  input.value = "";
-  const pending = appendMessage("assistant", "Pensando", true);
-  const button = byId("chat-submit");
-  const start = performance.now();
-  button.disabled = true;
-
+  const prompt = byId("chat-prompt").value.trim();
+  if (!prompt) return;
+  appendChatMessage("user", prompt);
+  byId("chat-prompt").value = "";
+  const pending = appendChatMessage("assistant", "Raciocinando", true);
+  const startedAt = performance.now();
+  byId("chat-submit").disabled = true;
   try {
-    const result = await apiRequest("/chat", {
-      method: "POST",
-      body: {
-        pergunta: prompt,
-        system_prompt: byId("system-prompt").value.trim(),
-        temperatura: Number(byId("temperature").value)
-      }
-    });
+    const result = await apiRequest("/chat", { method: "POST", body: {
+      pergunta: prompt,
+      system_prompt: byId("system-prompt").value.trim(),
+      temperatura: Number(byId("temperature").value)
+    }});
     pending.classList.remove("loading");
     pending.querySelector("p").textContent = result.resposta || "Sem resposta do modelo.";
-    updateExecution(result, start);
+    updateExecution(result, startedAt);
   } catch (error) {
     pending.classList.remove("loading");
     pending.querySelector("p").textContent = `Erro: ${error.message}`;
     showToast(error.message, true);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-function isEmailSummary() {
-  return byId("summary-preset").value === "email";
+  } finally { byId("chat-submit").disabled = false; }
 }
 
 function updateSummaryMode() {
-  const emailMode = isEmailSummary();
-  byId("email-fields").hidden = !emailMode;
-  byId("summary-endpoint-label").textContent = emailMode ? "POST /summarize/email" : "POST /summarize";
-  byId("summary-text-label").textContent = emailMode ? "Corpo do e-mail" : "Conteudo para analisar";
-  byId("summary-text").placeholder = emailMode
-    ? "Cole aqui o corpo completo do e-mail..."
-    : "Cole aqui o ticket, feedback de NPS ou texto para resumo...";
+  const email = byId("summary-preset").value === "email";
+  byId("email-fields").hidden = !email;
+  byId("summary-text-label").textContent = email ? "Corpo do e-mail" : "Conteúdo para analisar";
 }
 
-function updateSummaryPreset(loadSample = false) {
+function loadSummaryPreset(fillSample = false) {
   const preset = presets[byId("summary-preset").value];
   byId("summary-instructions").value = preset.instructions;
   updateSummaryMode();
-  if (loadSample) {
+  if (fillSample) {
     byId("summary-email-subject").value = preset.subject || "";
     byId("summary-email-from").value = preset.from || "";
     byId("summary-text").value = preset.sample;
@@ -278,66 +211,41 @@ function updateSummaryCount() {
 
 async function submitSummary(event) {
   event.preventDefault();
-  const output = byId("summary-output");
-  const button = byId("summary-submit");
-  const start = performance.now();
   const text = byId("summary-text").value.trim();
-  if (!text) {
-    showToast("Cole um conteudo para resumir antes de enviar.", true);
-    return;
-  }
-
-  const emailMode = isEmailSummary();
-  const body = emailMode
-    ? {
-        assunto: byId("summary-email-subject").value.trim() || undefined,
-        remetente: byId("summary-email-from").value.trim() || undefined,
-        corpo: text,
-        instrucoes: byId("summary-instructions").value.trim(),
-        max_tokens: 700
-      }
-    : {
-        texto: text,
-        instrucoes: byId("summary-instructions").value.trim(),
-        max_tokens: 700
-      };
-
-  output.className = "result-output busy";
-  output.textContent = emailMode ? "Gerando resumo do e-mail..." : "Gerando resumo...";
-  button.disabled = true;
-
+  if (!text) return;
+  const email = byId("summary-preset").value === "email";
+  const output = byId("summary-output");
+  const startedAt = performance.now();
+  output.className = "rich-output busy";
+  output.textContent = "Sintetizando o conteúdo...";
+  byId("summary-submit").disabled = true;
+  const body = email ? {
+    assunto: byId("summary-email-subject").value.trim() || undefined,
+    remetente: byId("summary-email-from").value.trim() || undefined,
+    corpo: text,
+    instrucoes: byId("summary-instructions").value.trim(),
+    max_tokens: 800
+  } : { texto: text, instrucoes: byId("summary-instructions").value.trim(), max_tokens: 800 };
   try {
-    const result = await apiRequest(emailMode ? "/summarize/email" : "/summarize", {
-      method: "POST",
-      body
-    });
-    output.className = "result-output";
-    output.textContent = result.resposta || "Sem resposta do modelo.";
-    updateExecution(result, start);
+    const result = await apiRequest(email ? "/summarize/email" : "/summarize", { method: "POST", body });
+    output.className = "rich-output";
+    output.textContent = result.resposta;
+    updateExecution(result, startedAt);
   } catch (error) {
-    output.className = "result-output";
+    output.className = "rich-output";
     output.textContent = `Erro: ${error.message}`;
     showToast(error.message, true);
-  } finally {
-    button.disabled = false;
-  }
+  } finally { byId("summary-submit").disabled = false; }
 }
 
-function handleImageFile(file) {
-  if (!file || !file.type.startsWith("image/")) {
-    showToast("Selecione um arquivo de imagem valido.", true);
-    return;
-  }
+function handleImage(file) {
+  if (!file || !file.type.startsWith("image/")) { showToast("Selecione uma imagem válida.", true); return; }
   const reader = new FileReader();
   reader.onload = () => {
     const dataUrl = String(reader.result);
-    state.image = {
-      base64: dataUrl.split(",")[1],
-      mediaType: file.type
-    };
-    const preview = byId("vision-preview");
-    preview.src = dataUrl;
-    preview.hidden = false;
+    state.image = { base64: dataUrl.split(",")[1], mediaType: file.type };
+    byId("vision-preview").src = dataUrl;
+    byId("vision-preview").hidden = false;
     byId("upload-copy").hidden = true;
     byId("vision-submit").disabled = false;
   };
@@ -346,143 +254,249 @@ function handleImageFile(file) {
 
 async function submitVision(event) {
   event.preventDefault();
-  if (!state.image) {
-    return;
-  }
+  if (!state.image) return;
   const output = byId("vision-output");
-  const button = byId("vision-submit");
-  const start = performance.now();
-  output.className = "result-output busy";
-  output.textContent = "Analisando imagem... modelos visuais podem levar mais tempo.";
-  button.disabled = true;
-
+  const startedAt = performance.now();
+  output.className = "rich-output busy";
+  output.textContent = "Interpretando a imagem...";
+  byId("vision-submit").disabled = true;
   try {
-    const result = await apiRequest("/vision", {
-      method: "POST",
-      body: {
-        imagem_base64: state.image.base64,
-        imagem_media_type: state.image.mediaType,
-        prompt: byId("vision-prompt").value
-      }
-    });
-    output.className = "result-output";
-    output.textContent = result.resposta || "Sem interpretacao retornada.";
-    updateExecution(result, start);
+    const result = await apiRequest("/vision", { method: "POST", body: {
+      imagem_base64: state.image.base64,
+      imagem_media_type: state.image.mediaType,
+      prompt: byId("vision-prompt").value.trim()
+    }});
+    output.className = "rich-output";
+    output.textContent = result.resposta;
+    updateExecution(result, startedAt);
   } catch (error) {
-    output.className = "result-output";
+    output.className = "rich-output";
     output.textContent = `Erro: ${error.message}`;
     showToast(error.message, true);
-  } finally {
-    button.disabled = false;
-  }
+  } finally { byId("vision-submit").disabled = false; }
 }
 
-async function copyResult(id) {
-  const text = byId(id).innerText;
+function openAdminDialog() {
+  byId("admin-login-error").textContent = "";
+  byId("admin-key").value = "";
+  byId("admin-dialog").showModal();
+  window.setTimeout(() => byId("admin-key").focus(), 50);
+}
+
+async function authenticateAdmin(event) {
+  event.preventDefault();
+  const key = byId("admin-key").value.trim();
+  if (!key) return;
+  state.adminKey = key;
+  byId("admin-login-button").disabled = true;
+  byId("admin-login-error").textContent = "Validando...";
   try {
-    await navigator.clipboard.writeText(text);
-    showToast("Conteudo copiado.");
-  } catch (_error) {
-    showToast("Nao foi possivel copiar neste navegador.", true);
-  }
+    const config = await apiRequest("/admin/config", { admin: true });
+    state.adminConfig = config;
+    revealAdmin(config);
+    byId("admin-dialog").close();
+    navigate(state.pendingAdminView || "admin");
+    showToast("Workspace administrativo desbloqueado.");
+  } catch (error) {
+    state.adminKey = "";
+    byId("admin-login-error").textContent = error.message;
+  } finally { byId("admin-login-button").disabled = false; }
 }
 
-function updateIntegrationSnippet() {
-  const url = apiUrl();
-  const docsBaseUrl = maybeById("docs-base-url");
-  if (docsBaseUrl) {
-    docsBaseUrl.textContent = url;
-  }
-  byId("integration-code").textContent = `$body = @{
-  assunto = "Problema com pagamento"
-  remetente = "cliente@empresa.com"
-  corpo = "Conteudo completo do e-mail recebido pelo sistema."
-  instrucoes = "Resuma, informe prioridade e proxima acao."
-} | ConvertTo-Json
+function revealAdmin(config) {
+  byId("admin-nav").hidden = false;
+  byId("dw-nav").hidden = false;
+  byId("admin-access-label").textContent = "Admin ativo";
+  byId("overview-dw").textContent = config.dw_enabled ? "Configurado" : "Desativado";
+  byId("overview-dw-copy").textContent = config.dw_enabled ? `${config.dw_host}:${config.dw_port}` : "Ative no backend/.env";
+  byId("admin-environment").textContent = config.environment;
+  byId("admin-provider").textContent = config.provider;
+  byId("admin-chat-model").textContent = config.chat_model;
+  byId("admin-vision-model").textContent = config.vision_model;
+  byId("admin-timeout").textContent = `${config.request_timeout}s`;
+  byId("admin-dw-host").textContent = config.dw_enabled ? `${config.dw_host}:${config.dw_port}` : "Desativado";
+  byId("admin-dw-database").textContent = config.dw_database || "—";
+  byId("admin-dw-user").textContent = config.dw_user || "—";
+  byId("admin-dw-ssl").textContent = config.dw_sslmode || "—";
+  byId("admin-dw-schemas").textContent = config.dw_allowed_schemas.join(", ") || "—";
+  byId("dw-connection-label").textContent = config.dw_enabled ? "Configurado · teste pendente" : "Integração desativada";
+}
+
+function logoutAdmin() {
+  state.adminKey = "";
+  state.adminConfig = null;
+  byId("admin-nav").hidden = true;
+  byId("dw-nav").hidden = true;
+  byId("admin-access-label").textContent = "Admin";
+  byId("overview-dw").textContent = "Protegido";
+  byId("overview-dw-copy").textContent = "Acesso administrativo";
+  navigate("overview");
+  showToast("Sessão administrativa encerrada.");
+}
+
+async function testWarehouse() {
+  const buttons = [byId("test-dw")];
+  buttons.forEach((button) => { button.disabled = true; });
+  byId("admin-dw-dot").className = "live-dot waiting";
+  byId("dw-connection-dot").className = "live-dot waiting";
+  try {
+    const result = await apiRequest("/admin/dw/test", { method: "POST", admin: true });
+    byId("admin-dw-dot").className = "live-dot";
+    byId("dw-connection-dot").className = "live-dot";
+    byId("dw-connection-label").textContent = `${result.database} · somente leitura`;
+    showToast(`DW conectado como ${result.user}.`);
+  } catch (error) {
+    byId("admin-dw-dot").className = "live-dot offline";
+    byId("dw-connection-dot").className = "live-dot offline";
+    byId("dw-connection-label").textContent = "Falha de conexão";
+    showToast(error.message, true);
+  } finally { buttons.forEach((button) => { button.disabled = false; }); }
+}
+
+async function loadWarehouseSchema(force = false) {
+  const buttons = [byId("load-schema"), byId("refresh-schema")];
+  buttons.forEach((button) => { button.disabled = true; });
+  try {
+    const schema = await apiRequest(`/admin/dw/schema?refresh=${force}`, { admin: true });
+    renderSchema(schema.tables);
+    byId("dw-table-count").textContent = `${schema.tables.length} tabelas`;
+    byId("dw-connection-label").textContent = `${schema.database} · ${schema.user}`;
+    byId("dw-connection-dot").className = "live-dot";
+    showToast(`${schema.tables.length} tabelas fact/dim carregadas.`);
+  } catch (error) {
+    byId("schema-list").textContent = error.message;
+    byId("dw-connection-dot").className = "live-dot offline";
+    showToast(error.message, true);
+  } finally { buttons.forEach((button) => { button.disabled = false; }); }
+}
+
+function renderSchema(tables) {
+  const container = byId("schema-list");
+  container.replaceChildren();
+  if (!tables.length) { const empty = document.createElement("p"); empty.textContent = "Nenhuma tabela permitida encontrada."; container.appendChild(empty); return; }
+  tables.forEach((table) => {
+    const item = document.createElement("div");
+    item.className = "schema-table";
+    const name = document.createElement("strong");
+    name.textContent = `${table.schema_name}.${table.table_name}`;
+    const columns = document.createElement("span");
+    columns.textContent = table.columns.map((column) => column.name).join(" · ");
+    item.append(name, columns);
+    container.appendChild(item);
+  });
+}
+
+async function submitWarehouseQuestion(event) {
+  event.preventDefault();
+  const question = byId("dw-question").value.trim();
+  if (!question) return;
+  const resultSection = byId("dw-result");
+  resultSection.hidden = false;
+  byId("dw-answer").className = "rich-output busy";
+  byId("dw-answer").textContent = "Aethra está lendo o schema, construindo e validando a consulta...";
+  byId("dw-sql").textContent = "-- aguardando SQL seguro";
+  byId("dw-table").replaceChildren();
+  byId("dw-submit").disabled = true;
+  const startedAt = performance.now();
+  try {
+    const result = await apiRequest("/dw/ask", { method: "POST", admin: true, body: { pergunta: question } });
+    byId("dw-answer").className = "rich-output";
+    byId("dw-answer").textContent = result.resposta;
+    byId("dw-sql").textContent = result.sql;
+    byId("dw-row-count").textContent = `${result.row_count} linhas${result.truncated ? " · limitado" : ""}`;
+    renderDataTable(result.columns, result.rows);
+    updateExecution(result, startedAt);
+  } catch (error) {
+    byId("dw-answer").className = "rich-output";
+    byId("dw-answer").textContent = `Não foi possível concluir: ${error.message}`;
+    showToast(error.message, true);
+  } finally { byId("dw-submit").disabled = false; }
+}
+
+function renderDataTable(columns, rows) {
+  const wrapper = byId("dw-table");
+  wrapper.replaceChildren();
+  if (!rows.length) { const empty = document.createElement("div"); empty.className = "rich-output"; empty.textContent = "A consulta não retornou linhas."; wrapper.appendChild(empty); return; }
+  const table = document.createElement("table");
+  table.className = "data-table";
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  columns.forEach((column) => { const th = document.createElement("th"); th.textContent = column; headRow.appendChild(th); });
+  head.appendChild(headRow);
+  const body = document.createElement("tbody");
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    row.forEach((value) => { const td = document.createElement("td"); td.textContent = value === null ? "NULL" : String(value); td.title = td.textContent; tr.appendChild(td); });
+    body.appendChild(tr);
+  });
+  table.append(head, body);
+  wrapper.appendChild(table);
+}
+
+async function copyElement(id) {
+  try { await navigator.clipboard.writeText(byId(id).innerText); showToast("Conteúdo copiado."); }
+  catch (_error) { showToast("Não foi possível copiar.", true); }
+}
+
+function updateIntegrationCode() {
+  byId("docs-base-url").textContent = apiUrl();
+  byId("integration-code").textContent = `$headers = @{ "X-Admin-Key" = "SUA_CHAVE_ADMIN" }
+$body = @{ pergunta = "Qual foi a receita mensal por região?" } | ConvertTo-Json
 
 Invoke-RestMethod \`
-  -Uri "${url}/summarize/email" \`
+  -Uri "${apiUrl()}/dw/ask" \`
   -Method Post \`
+  -Headers $headers \`
   -ContentType "application/json; charset=utf-8" \`
   -Body ([Text.Encoding]::UTF8.GetBytes($body))`;
 }
 
 function setupEvents() {
-  document.querySelectorAll(".tab").forEach((tab) => {
-    tab.addEventListener("click", () => openTab(tab.dataset.tab));
-  });
-  document.querySelectorAll("[data-open-tab]").forEach((button) => {
-    button.addEventListener("click", () => openTab(button.dataset.openTab));
-  });
-
+  document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => navigate(button.dataset.view)));
+  document.querySelectorAll("[data-open-view]").forEach((button) => button.addEventListener("click", () => {
+    navigate(button.dataset.openView);
+    if (button.dataset.chatSample) byId("chat-prompt").value = button.dataset.chatSample;
+  }));
+  [byId("hero-dw-button"), byId("quick-dw")].forEach((button) => button.addEventListener("click", () => navigate("warehouse")));
   byId("refresh-status").addEventListener("click", checkHealth);
-  byId("test-connection").addEventListener("click", async () => {
-    persistConnection();
-    if (await checkHealth()) {
-      showToast("Conexao com a Aethra confirmada.");
-    }
-  });
-  byId("save-connection").addEventListener("click", () => {
-    persistConnection();
-    showToast("Configuracao aplicada nesta sessao.");
-    checkHealth();
-  });
-  byId("api-url").addEventListener("input", () => {
-    const isNgrok = byId("api-url").value.includes("ngrok");
-    const ngrokInput = maybeById("ngrok-header");
-    if (isNgrok && ngrokInput) {
-      ngrokInput.checked = true;
-    }
-    updateIntegrationSnippet();
-  });
 
   byId("chat-form").addEventListener("submit", submitChat);
-  byId("clear-chat").addEventListener("click", () => {
-    byId("chat-messages").innerHTML = "";
-    appendMessage("assistant", "Chat limpo. Como posso ajudar agora?");
-  });
-  byId("chat-prompt").addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      byId("chat-form").requestSubmit();
-    }
-  });
-  byId("temperature").addEventListener("input", (event) => {
-    byId("temperature-value").textContent = event.target.value;
-  });
+  byId("chat-prompt").addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); byId("chat-form").requestSubmit(); } });
+  byId("temperature").addEventListener("input", (event) => { byId("temperature-value").textContent = event.target.value; });
+  byId("clear-chat").addEventListener("click", () => { byId("chat-messages").replaceChildren(); appendChatMessage("assistant", "Conversa limpa. Em que vamos trabalhar?"); });
 
-  byId("summary-preset").addEventListener("change", () => updateSummaryPreset(false));
-  byId("load-sample").addEventListener("click", () => updateSummaryPreset(true));
+  byId("summary-preset").addEventListener("change", () => loadSummaryPreset(false));
+  byId("load-sample").addEventListener("click", () => loadSummaryPreset(true));
   byId("summary-text").addEventListener("input", updateSummaryCount);
   byId("summary-form").addEventListener("submit", submitSummary);
 
+  byId("vision-file").addEventListener("change", (event) => handleImage(event.target.files[0]));
   const dropZone = byId("drop-zone");
-  byId("vision-file").addEventListener("change", (event) => handleImageFile(event.target.files[0]));
-  ["dragenter", "dragover"].forEach((name) => {
-    dropZone.addEventListener(name, (event) => {
-      event.preventDefault();
-      dropZone.classList.add("dragging");
-    });
-  });
-  ["dragleave", "drop"].forEach((name) => {
-    dropZone.addEventListener(name, (event) => {
-      event.preventDefault();
-      dropZone.classList.remove("dragging");
-    });
-  });
-  dropZone.addEventListener("drop", (event) => handleImageFile(event.dataTransfer.files[0]));
+  ["dragenter", "dragover"].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.add("dragging"); }));
+  ["dragleave", "drop"].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.remove("dragging"); }));
+  dropZone.addEventListener("drop", (event) => handleImage(event.dataTransfer.files[0]));
   byId("vision-form").addEventListener("submit", submitVision);
 
-  document.querySelectorAll(".copy-result").forEach((button) => {
-    button.addEventListener("click", () => copyResult(button.dataset.copy));
-  });
+  byId("admin-access").addEventListener("click", () => state.adminKey ? navigate("admin") : openAdminDialog());
+  byId("admin-login-form").addEventListener("submit", authenticateAdmin);
+  byId("close-admin-dialog").addEventListener("click", () => byId("admin-dialog").close());
+  byId("admin-logout").addEventListener("click", logoutAdmin);
+  byId("test-dw").addEventListener("click", testWarehouse);
+  byId("load-schema").addEventListener("click", () => loadWarehouseSchema(true));
+  byId("refresh-schema").addEventListener("click", () => loadWarehouseSchema(true));
+  byId("dw-form").addEventListener("submit", submitWarehouseQuestion);
+  document.querySelectorAll("[data-dw-sample]").forEach((button) => button.addEventListener("click", () => { byId("dw-question").value = button.dataset.dwSample; }));
+
+  byId("save-connection").addEventListener("click", () => { sessionStorage.setItem("aethra.apiUrl", apiUrl()); updateIntegrationCode(); checkHealth(); showToast("Endpoint atualizado nesta sessão."); });
+  byId("api-url").addEventListener("input", updateIntegrationCode);
+  document.querySelectorAll("[data-copy]").forEach((button) => button.addEventListener("click", () => copyElement(button.dataset.copy)));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  restoreConnection();
+  byId("api-url").value = sessionStorage.getItem("aethra.apiUrl") || resolveDefaultApiUrl();
   setupEvents();
-  updateIntegrationSnippet();
   updateSummaryMode();
   updateSummaryCount();
+  updateIntegrationCode();
   checkHealth();
 });

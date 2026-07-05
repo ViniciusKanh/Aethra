@@ -1,5 +1,11 @@
 from .schemas import (
+    AdminConfigResponse,
     ChatRequest,
+    DwColumn,
+    DwQueryResponse,
+    DwQuestionRequest,
+    DwSchemaResponse,
+    DwTable,
     EmailSummarizeRequest,
     HealthResponse,
     RootResponse,
@@ -9,7 +15,13 @@ from .schemas import (
 )
 
 __all__ = [
+    "AdminConfigResponse",
     "ChatRequest",
+    "DwColumn",
+    "DwQueryResponse",
+    "DwQuestionRequest",
+    "DwSchemaResponse",
+    "DwTable",
     "EmailSummarizeRequest",
     "HealthResponse",
     "RootResponse",
