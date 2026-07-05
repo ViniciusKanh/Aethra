@@ -135,6 +135,8 @@ class WarehouseSqlGuardTests(unittest.TestCase):
     def test_rejects_dangerous_postgres_function(self):
         with self.assertRaises(WarehouseError):
             self.service._validate_sql("SELECT pg_sleep(10)", self.tables, 50)
+        with self.assertRaises(WarehouseError):
+            self.service._validate_sql("SELECT pg_read_binary_file('/tmp/secret')", self.tables, 50)
 
     def test_full_question_pipeline_returns_sql_and_rows(self):
         provider = SequencedProvider()

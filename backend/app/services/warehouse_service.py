@@ -57,6 +57,8 @@ class WarehouseService:
         "execute",
         "grant",
         "insert",
+        "into",
+        "lock",
         "merge",
         "pragma",
         "replace",
@@ -66,7 +68,27 @@ class WarehouseService:
         "update",
         "use",
     }
-    FORBIDDEN_FUNCTIONS = {"dblink", "lo_import", "pg_ls_dir", "pg_read_file", "pg_sleep"}
+    FORBIDDEN_FUNCTIONS = {
+        "dblink",
+        "dblink_exec",
+        "lo_export",
+        "lo_import",
+        "pg_advisory_lock",
+        "pg_advisory_xact_lock",
+        "pg_cancel_backend",
+        "pg_log_backend_memory_contexts",
+        "pg_ls_dir",
+        "pg_ls_logdir",
+        "pg_ls_waldir",
+        "pg_read_binary_file",
+        "pg_read_file",
+        "pg_reload_conf",
+        "pg_rotate_logfile",
+        "pg_sleep",
+        "pg_stat_file",
+        "pg_terminate_backend",
+        "set_config",
+    }
 
     def __init__(self, provider: BaseProvider, settings: Settings) -> None:
         self.provider = provider
