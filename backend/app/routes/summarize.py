@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 
 from ..models import EmailSummarizeRequest, SummarizeRequest, TextTaskResponse
-from ..security import require_api_key
+from ..security import require_user_or_api_key
 
 router = APIRouter()
 
@@ -10,7 +10,7 @@ router = APIRouter()
     "/summarize",
     response_model=TextTaskResponse,
     tags=["Resumo"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_user_or_api_key)],
 )
 def summarize(payload: SummarizeRequest, request: Request) -> TextTaskResponse:
     return request.app.state.summarize_service.executar(payload)
@@ -20,7 +20,7 @@ def summarize(payload: SummarizeRequest, request: Request) -> TextTaskResponse:
     "/summarize/email",
     response_model=TextTaskResponse,
     tags=["Resumo"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_user_or_api_key)],
 )
 def summarize_email(payload: EmailSummarizeRequest, request: Request) -> TextTaskResponse:
     return request.app.state.summarize_service.executar_email(payload)

@@ -1,54 +1,79 @@
 import secrets
 
 from fastapi import HTTPException, Request, Security, status
-from fastapi.security import APIKeyHeader
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
+
+from .models import UserResponse
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-admin_key_header = APIKeyHeader(name="X-Admin-Key", auto_error=False)
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def _valid_api_key(request: Request, provided_api_key: str | None) -> bool:
+    settings = request.app.state.settings
+    if not settings.auth_enabled:
+        return False
+    configured = settings.api_key
+    return bool(configured and provided_api_key and secrets.compare_digest(provided_api_key, configured))
 
 
 def require_api_key(
     request: Request,
     provided_api_key: str | None = Security(api_key_header),
 ) -> None:
-    """Valida o consumidor da API quando uma chave foi configurada."""
+    """Mantem compatibilidade para integracoes servidor-a-servidor."""
 
     settings = request.app.state.settings
     if not settings.auth_enabled:
         return
+    if not settings.api_key:
+        raise HTTPException(status_code=503, detail="Autenticacao da API sem chave configurada.")
+    if not _valid_api_key(request, provided_api_key):
+        raise HTTPException(status_code=401, detail="API key ausente ou invalida.")
 
-    configured_api_key = settings.api_key
-    if not configured_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Autenticacao da API esta ativa, mas a chave nao foi configurada.",
-        )
 
-    if not provided_api_key or not secrets.compare_digest(provided_api_key, configured_api_key):
+def require_authenticated_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+) -> UserResponse:
+    """Valida uma sessao opaca e revogavel emitida no login."""
+
+    if not request.app.state.settings.user_auth_enabled:
+        raise HTTPException(status_code=404, detail="Autenticacao de usuarios desativada.")
+    if not credentials or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key ausente ou invalida.",
+            detail="Faca login para continuar.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+    return request.app.state.user_service.authenticate(credentials.credentials)
 
 
-def require_admin_key(
+def require_admin_user(user: UserResponse = Security(require_authenticated_user)) -> UserResponse:
+    """Autoriza apenas administradores ativos."""
+
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acesso exclusivo para administradores.")
+    return user
+
+
+def require_user_or_api_key(
     request: Request,
-    provided_admin_key: str | None = Security(admin_key_header),
-) -> None:
-    """Protege configuracoes e dados corporativos com uma chave exclusiva."""
+    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+    provided_api_key: str | None = Security(api_key_header),
+) -> UserResponse | None:
+    """Aceita sessao de usuario no front ou API key em integracoes tecnicas."""
 
     settings = request.app.state.settings
-    if not settings.admin_enabled:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recurso nao encontrado.")
-
-    configured_admin_key = settings.admin_api_key
-    if not configured_admin_key:
+    if settings.user_auth_enabled:
+        if credentials and credentials.scheme.lower() == "bearer":
+            return request.app.state.user_service.authenticate(credentials.credentials)
+        if _valid_api_key(request, provided_api_key):
+            return None
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Console administrativo sem chave configurada.",
+            status_code=401,
+            detail="Faca login ou envie uma API key valida.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    if not provided_admin_key or not secrets.compare_digest(provided_admin_key, configured_admin_key):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credencial administrativa ausente ou invalida.",
-        )
+    require_api_key(request, provided_api_key)
+    return None

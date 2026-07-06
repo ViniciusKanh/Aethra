@@ -2,236 +2,146 @@
 
 # Aethra
 
-### Intelligence workspace local para GenAI, PostgreSQL, operações e visão multimodal
+### IA documental privada, com histórico e fontes verificáveis
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-black)](https://ollama.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-DW-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Ollama](https://img.shields.io/badge/Ollama-LLM_local-black)](https://ollama.com/)
+[![Turso](https://img.shields.io/badge/Turso-libSQL-4FF8D2)](https://turso.tech/)
 
-Aethra conecta modelos locais, fluxos de atendimento e um Data Warehouse PostgreSQL
-em uma API auditável e um workspace web protegido.
+Aethra conversa com os documentos da empresa usando um modelo local. Cada resposta
+documental inclui os arquivos e trechos usados como evidência.
 
 </div>
 
-## Capacidades
+## O que está incluído
 
-- Chat e geração de texto.
-- Resumo de e-mails, tickets, NPS e textos executivos.
-- Análise multimodal de imagens.
-- Perguntas em linguagem natural sobre tabelas `fact_` e `dim_`.
-- SQL gerado com allowlist, limite de linhas e transação read only.
-- Console administrativo separado da API pública.
-- Providers Ollama e vLLM.
-- Frontend estático publicável pelo GitHub Pages.
+- Login, cadastro, sessões seguras e perfis `admin` e `user`.
+- Usuários, conversas e mensagens persistidos no Turso.
+- Credenciais do Turso e Google Drive criptografadas no backend e nunca devolvidas ao navegador.
+- Google Drive em modo somente leitura, com busca recursiva em pastas.
+- Leitura de PDF, DOCX, TXT, Markdown, CSV, JSON, HTML, XML, YAML e LOG.
+- RAG local com LangChain, Chroma, embeddings Ollama e recuperação combinada por relevância + MMR.
+- Respostas com arquivo, localização, trecho e link para a fonte.
+- Histórico privado: cada usuário acessa somente as próprias conversas.
+- Console administrativo invisível para usuários comuns.
+- Frontend React + Vite + TypeScript, com Markdown/GFM seguro e bundle estático.
 
-## Arquitetura local recomendada
+## Arquitetura
 
 ```text
 Navegador
-   │
-   ▼
-Aethra / FastAPI :8080
-   ├── Ollama :11434
-   │      └── qwen3.5:9b
-   └── PostgreSQL DW :5432
-          └── usuário dedicado somente leitura
+   |
+   v
+Aethra / FastAPI :8081
+   |-- Turso
+   |     `-- usuários, sessões, conversas e mensagens
+   |-- Google Drive API (somente leitura)
+   |     `-- documentos -> extração -> Chroma local
+   `-- Ollama :11434
+         |-- qwen3.5:9b
+         `-- qwen3-embedding:0.6b
 ```
 
-Para uma RTX 4050 de 6 GB e 32 GB de RAM, `qwen3.5:9b` oferece um equilíbrio
-prático entre inteligência e velocidade. O modelo tem suporte a raciocínio,
-ferramentas, contexto amplo e visão multimodal. Parte do processamento pode usar
-RAM compartilhada quando a VRAM não for suficiente.
+O frontend usa React + Vite + TypeScript. O código-fonte vive em `frontend/src`, o
+bundle local em `frontend/dist`, a publicação do GitHub Pages em `docs/` e o Space
+recebe apenas o bundle compilado em `aethra/frontend/`.
 
 ## Instalação local
 
-### 1. Dependências
-
 ```powershell
+cd "E:\Modelos LLMs\Aethra"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-Instale o Ollama e baixe o modelo:
-
-```powershell
-ollama pull qwen3.5:9b
-```
-
-### 2. Configuração
-
-```powershell
 Copy-Item backend\.env.example backend\.env
+ollama pull qwen3.5:9b
+ollama pull qwen3-embedding:0.6b
+Set-Location frontend
+npm install
+npm run build
+Set-Location ..
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8081 --reload
 ```
 
-Configuração mínima local:
+Abra `http://127.0.0.1:8081/app/`.
 
-```dotenv
-ENVIRONMENT=development
-AUTH_ENABLED=false
-API_KEY=
-CORS_ORIGINS=http://localhost:5500,http://127.0.0.1:8080
-ENABLE_DOCS=true
-FRONTEND_ENABLED=true
-FRONTEND_DIR=frontend
+## Primeiro acesso e Turso
 
-PROVIDER=ollama
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-DEFAULT_CHAT_MODEL=qwen3.5:9b
-DEFAULT_VISION_MODEL=qwen3.5:9b
-REQUEST_TIMEOUT=300
-```
+1. Crie um banco no Turso e gere um token novo.
+2. Abra a tela inicial da Aethra.
+3. Informe a URL `libsql://...`, o token novo e os dados do administrador.
+4. Clique em **Ativar Aethra**.
 
-### 3. Administração e Data Warehouse
+O backend cria automaticamente as tabelas de usuários, sessões, conversas e mensagens.
+Depois do primeiro acesso, o administrador pode trocar a URL ou o token em
+**Administração > Sistema**. O token atual nunca é mostrado no frontend.
 
-Gere uma chave administrativa com pelo menos 32 caracteres e configure o DW
-apenas em `backend/.env`, que é ignorado pelo Git:
+Também é possível fornecer `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` no ambiente.
+Não versione o arquivo `.env` e revogue imediatamente qualquer token que tenha sido
+publicado em chat, log, captura de tela ou repositório.
 
-```dotenv
-ADMIN_ENABLED=true
-ADMIN_API_KEY=UMA_CHAVE_ALEATORIA_COM_32_OU_MAIS_CARACTERES
+## Conectar uma pasta do Google Drive
 
-DW_ENABLED=true
-DW_HOST=10.20.9.21
-DW_PORT=5432
-DW_DATABASE=seu_banco_dw
-DW_USER=aethra_reader
-DW_PASSWORD=SENHA_LOCAL_NAO_VERSIONADA
-DW_SSLMODE=prefer
-DW_ALLOWED_SCHEMAS=analytics,public
-DW_TABLE_PREFIXES=fact_,dim_
-DW_CONNECT_TIMEOUT=5
-DW_STATEMENT_TIMEOUT_MS=30000
-DW_MAX_ROWS=200
-DW_SCHEMA_CACHE_TTL=300
-```
+1. No Google Cloud, habilite a Google Drive API e crie uma service account.
+2. Gere uma chave JSON para essa conta.
+3. Compartilhe a pasta desejada com o e-mail da service account como **Leitor**.
+4. Na Aethra, entre como administrador e abra **Administração > Base de conhecimento**.
+5. Informe o ID da pasta, cole o JSON e salve.
+6. Use **Testar acesso** e depois **Sincronizar documentos**.
 
-Use [deployment/postgres_readonly.sql.example](deployment/postgres_readonly.sql.example)
-como referência para criar o papel PostgreSQL com privilégio mínimo.
+O ID é o trecho depois de `/folders/` na URL do Drive. Subpastas são percorridas
+automaticamente. Arquivos alterados entram na base na próxima sincronização.
 
-### 4. Execução
+PDFs digitalizados apenas como imagem ainda precisam de OCR antes de serem indexados.
 
-```powershell
-uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
-```
+## Perfis de acesso
 
-- Workspace: <http://127.0.0.1:8080/app/>
-- Health: <http://127.0.0.1:8080/health>
-- Swagger: <http://127.0.0.1:8080/docs>
+- `user`: chat, citações e o próprio histórico.
+- `admin`: tudo do perfil comum, configuração documental, runtime e gestão de usuários.
 
-## Segurança do DW
+O primeiro usuário criado pelo fluxo de ativação é administrador. Novos cadastros
+recebem o perfil comum.
 
-A proteção é aplicada em várias camadas:
+## Rotas principais
 
-1. `/admin/*` e `/dw/*` exigem `X-Admin-Key`.
-2. Chaves e senha PostgreSQL nunca são devolvidas pelo endpoint de configuração.
-3. Apenas schemas e prefixos configurados entram no contexto do modelo.
-4. O SQL precisa ser uma única query compatível com `SELECT`.
-5. Referências fora da allowlist de tabelas são rejeitadas.
-6. Operações DDL/DML e funções PostgreSQL perigosas são bloqueadas.
-7. Toda conexão usa `default_transaction_read_only=on` e `statement_timeout`.
-8. O servidor limita a quantidade de linhas retornadas.
-9. A conta PostgreSQL deve possuir somente `CONNECT`, `USAGE` e `SELECT`.
+| Método | Rota | Uso |
+|---|---|---|
+| `GET` | `/auth/status` | Estado do primeiro acesso |
+| `POST` | `/auth/setup` | Configura Turso e cria o primeiro admin |
+| `POST` | `/auth/login` | Abre sessão |
+| `POST` | `/assistant/chat` | Resposta documental com citações |
+| `GET` | `/conversations` | Histórico do usuário autenticado |
+| `GET` | `/conversations/{id}` | Mensagens de uma conversa própria |
+| `DELETE` | `/conversations/{id}` | Exclui uma conversa própria |
+| `GET` | `/admin/config` | Configuração sanitizada para admin |
+| `PUT` | `/admin/turso/config` | Troca URL ou token do Turso |
+| `PUT` | `/admin/knowledge/config` | Configura a pasta documental |
+| `POST` | `/admin/knowledge/sync` | Recria o índice local |
+| `GET` | `/admin/users` | Lista usuários para administração |
 
-Uma interface escondida não é uma fronteira de segurança. O frontend só revela
-as áreas DW e Backend depois que `/admin/config` valida a chave; a autorização
-real sempre acontece no FastAPI.
+## Segurança
 
-## Endpoints
+- Senhas usam Argon2 e nunca são armazenadas em texto puro.
+- Tokens de sessão são opacos e persistidos apenas como hash.
+- Há bloqueio temporário após tentativas repetidas de login.
+- Segredos de integração são criptografados com uma chave local separada.
+- A API do Drive usa escopo `drive.readonly`.
+- As consultas usam parâmetros vinculados ao enviar dados ao Turso.
+- Respostas administrativas indicam apenas se a credencial existe.
 
-| Método | Endpoint | Função | Proteção |
-| --- | --- | --- | --- |
-| `GET` | `/health` | Status da API e provider | Pública |
-| `POST` | `/chat` | Chat e geração de texto | API key opcional |
-| `POST` | `/summarize` | Resumo geral | API key opcional |
-| `POST` | `/summarize/email` | Resumo especializado de e-mail | API key opcional |
-| `POST` | `/vision` | Análise de imagem base64 | API key opcional |
-| `GET` | `/admin/config` | Configuração saneada do backend | Admin |
-| `POST` | `/admin/dw/test` | Teste de conexão PostgreSQL | Admin |
-| `GET` | `/admin/dw/schema` | Tabelas e colunas permitidas | Admin |
-| `POST` | `/dw/ask` | Pergunta, SQL, execução e síntese | Admin |
-
-### Exemplo de pergunta ao DW
-
-```powershell
-$headers = @{ "X-Admin-Key" = "SUA_CHAVE_ADMIN" }
-$body = @{
-  pergunta = "Qual foi a receita mensal por região e onde ocorreu a maior queda?"
-  max_rows = 100
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "http://127.0.0.1:8080/dw/ask" `
-  -Method Post `
-  -Headers $headers `
-  -ContentType "application/json; charset=utf-8" `
-  -Body ([Text.Encoding]::UTF8.GetBytes($body))
-```
-
-Resposta resumida:
-
-```json
-{
-  "status": "ok",
-  "model": "qwen3.5:9b",
-  "resposta": "Síntese baseada nas linhas retornadas...",
-  "sql": "SELECT ... LIMIT 100",
-  "columns": ["mes", "regiao", "receita"],
-  "rows": [],
-  "row_count": 0,
-  "truncated": false,
-  "metadados": {
-    "read_only": true
-  }
-}
-```
-
-## Estrutura
-
-```text
-Aethra/
-├── backend/app/
-│   ├── config/
-│   ├── models/
-│   ├── providers/
-│   ├── routes/
-│   ├── services/
-│   ├── main.py
-│   └── security.py
-├── deployment/
-├── docs/                 # GitHub Pages
-├── frontend/             # fonte principal da interface
-├── tests/
-├── requirements.txt
-└── README.md
-```
-
-Ao alterar o frontend, sincronize `frontend/` com `docs/` e com o frontend do
-repositório separado do Hugging Face Space.
+Em produção, mantenha `CONFIG_KEY_PATH` em volume persistente e protegido. Sem essa
+chave, as credenciais já cifradas não podem ser recuperadas.
 
 ## Testes
 
 ```powershell
+python -m compileall backend tests
 python -m unittest discover -s tests -v
-node --check frontend\script.js
-git diff --check
+Set-Location frontend
+npm run typecheck
+npm run build
 ```
 
-Os testes cobrem autenticação administrativa, ausência de segredos nas respostas,
-proteção do endpoint DW, bloqueio de escrita, allowlist SQL e contrato entre HTML/JS.
-
-## Limitações atuais
-
-- O modelo não conhece a semântica de negócio que não estiver expressa nos nomes e
-  tipos das tabelas. Uma camada semântica com descrições melhora muito a precisão.
-- A rede/VPN precisa permitir acesso ao host PostgreSQL.
-- O primeiro carregamento de `qwen3.5:9b` usa mais tempo e memória.
-- Consultas complexas podem precisar de exemplos validados ou métricas oficiais.
-- O Hugging Face CPU continua adequado apenas para demonstração; DW e modelo mais
-  capaz devem rodar localmente ou em infraestrutura dedicada.
-
-## Licença
-
-MIT. Consulte [LICENSE](LICENSE).
+Os testes cobrem autenticação, isolamento do histórico, criptografia de configuração,
+contrato Turso, extração de documentos, recuperação diversa, citações e o bundle React.

@@ -4,7 +4,17 @@ __pycache__/
 
 # Segredos locais e de producao nao devem ser versionados.
 backend/.env
+backend/data/
 deployment/.env.production
 
 # Clone separado do Hugging Face Space. Ele tem o proprio repositorio Git.
 aethra/
+
+# Configuracao criptografada e indices locais.
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Dependencias locais do frontend React.
+frontend/node_modules/

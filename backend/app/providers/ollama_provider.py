@@ -27,6 +27,7 @@ class OllamaProvider(BaseProvider):
         messages: list[Message],
         temperature: float = 0.2,
         max_tokens: int | None = None,
+        structured: bool = False,
     ) -> CompletionResult:
         system, prompt, images = self._converter_messages(messages)
         payload: dict[str, Any] = {
@@ -35,12 +36,18 @@ class OllamaProvider(BaseProvider):
             "stream": False,
             "options": {"temperature": temperature},
         }
+        if model.lower().startswith("qwen3.5"):
+            # Evita que o orçamento inteiro de saída seja consumido pelo campo thinking.
+            payload["think"] = False
         if system:
             payload["system"] = system
         if images:
             payload["images"] = images
         if max_tokens is not None:
             payload["options"]["num_predict"] = max_tokens
+        if structured:
+            payload["format"] = "json"
+            payload["think"] = False
 
         resultado = self._generate(payload)
         metadados = {

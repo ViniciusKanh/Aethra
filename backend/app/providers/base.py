@@ -40,6 +40,7 @@ class BaseProvider(ABC):
         messages: list[Message],
         temperature: float = 0.2,
         max_tokens: int | None = None,
+        structured: bool = False,
     ) -> CompletionResult:
         """Executa uma completion usando mensagens no formato de chat."""
 

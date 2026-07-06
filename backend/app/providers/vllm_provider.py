@@ -36,6 +36,7 @@ class VLLMProvider(BaseProvider):
         messages: list[Message],
         temperature: float = 0.2,
         max_tokens: int | None = None,
+        structured: bool = False,
     ) -> CompletionResult:
         payload: dict[str, Any] = {
             "model": model,

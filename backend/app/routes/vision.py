@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..models import TextTaskResponse, VisionRequest
-from ..security import require_api_key
+from ..security import require_user_or_api_key
 
 router = APIRouter()
 
@@ -10,7 +10,7 @@ router = APIRouter()
     "/vision",
     response_model=TextTaskResponse,
     tags=["Visao"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_user_or_api_key)],
 )
 def vision(payload: VisionRequest, request: Request) -> TextTaskResponse:
     try:

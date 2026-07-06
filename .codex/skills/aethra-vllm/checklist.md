@@ -19,7 +19,7 @@ REQUEST_TIMEOUT=300
 
 ## 3. Rodar o backend
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 ```
 
 ## 4. Testar

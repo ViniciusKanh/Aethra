@@ -20,8 +20,20 @@ class Settings(BaseSettings):
     frontend_enabled: bool = Field(default=True, alias="FRONTEND_ENABLED")
     frontend_dir: str = Field(default="frontend", alias="FRONTEND_DIR")
 
-    admin_enabled: bool = Field(default=False, alias="ADMIN_ENABLED")
-    admin_api_key: str | None = Field(default=None, alias="ADMIN_API_KEY")
+    user_auth_enabled: bool = Field(default=True, alias="USER_AUTH_ENABLED")
+    registration_enabled: bool = Field(default=True, alias="REGISTRATION_ENABLED")
+    admin_email: str = Field(default="", alias="ADMIN_EMAIL")
+    local_config_db_path: str = Field(default="backend/data/aethra_config.db", alias="LOCAL_CONFIG_DB_PATH")
+    config_key_path: str = Field(default="backend/data/.config_key", alias="CONFIG_KEY_PATH")
+    company_name: str = Field(default="Aethra", alias="COMPANY_NAME")
+    session_ttl_hours: int = Field(default=12, ge=1, le=720, alias="SESSION_TTL_HOURS")
+    max_login_attempts: int = Field(default=5, ge=3, le=20, alias="MAX_LOGIN_ATTEMPTS")
+    login_lock_minutes: int = Field(default=15, ge=1, le=1_440, alias="LOGIN_LOCK_MINUTES")
+    bootstrap_admin_email: str | None = Field(default=None, alias="BOOTSTRAP_ADMIN_EMAIL")
+    bootstrap_admin_password: str | None = Field(default=None, alias="BOOTSTRAP_ADMIN_PASSWORD")
+
+    turso_database_url: str = Field(default="", alias="TURSO_DATABASE_URL")
+    turso_auth_token: str = Field(default="", alias="TURSO_AUTH_TOKEN")
 
     provider: Literal["vllm", "ollama"] = Field(default="vllm", alias="PROVIDER")
 
@@ -40,27 +52,12 @@ class Settings(BaseSettings):
     )
     request_timeout: int = Field(default=300, ge=1, alias="REQUEST_TIMEOUT")
 
-    dw_enabled: bool = Field(default=False, alias="DW_ENABLED")
-    dw_host: str = Field(default="localhost", alias="DW_HOST")
-    dw_port: int = Field(default=5432, ge=1, le=65535, alias="DW_PORT")
-    dw_database: str = Field(default="", alias="DW_DATABASE")
-    dw_user: str = Field(default="", alias="DW_USER")
-    dw_password: str = Field(default="", alias="DW_PASSWORD")
-    dw_sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = Field(
-        default="prefer",
-        alias="DW_SSLMODE",
+    knowledge_index_path: str = Field(default="backend/data/knowledge", alias="KNOWLEDGE_INDEX_PATH")
+    default_embedding_model: str = Field(
+        default="qwen3-embedding:0.6b",
+        alias="DEFAULT_EMBEDDING_MODEL",
     )
-    dw_allowed_schemas: str = Field(default="public", alias="DW_ALLOWED_SCHEMAS")
-    dw_table_prefixes: str = Field(default="fact_,dim_", alias="DW_TABLE_PREFIXES")
-    dw_connect_timeout: int = Field(default=5, ge=1, le=60, alias="DW_CONNECT_TIMEOUT")
-    dw_statement_timeout_ms: int = Field(
-        default=30_000,
-        ge=1_000,
-        le=300_000,
-        alias="DW_STATEMENT_TIMEOUT_MS",
-    )
-    dw_max_rows: int = Field(default=200, ge=1, le=2_000, alias="DW_MAX_ROWS")
-    dw_schema_cache_ttl: int = Field(default=300, ge=0, le=86_400, alias="DW_SCHEMA_CACHE_TTL")
+    google_drive_max_file_mb: int = Field(default=50, ge=1, le=500, alias="GOOGLE_DRIVE_MAX_FILE_MB")
 
     app_name: str = Field(default="Aethra API", alias="APP_NAME")
     app_version: str = Field(default="1.0.0", alias="APP_VERSION")
@@ -83,25 +80,36 @@ class Settings(BaseSettings):
         return [origem.strip() for origem in self.cors_origins.split(",") if origem.strip()]
 
     @property
-    def allowed_dw_schemas(self) -> list[str]:
-        """Lista de schemas do DW que podem entrar no contexto do modelo."""
-
-        return [schema.strip() for schema in self.dw_allowed_schemas.split(",") if schema.strip()]
-
-    @property
-    def allowed_dw_table_prefixes(self) -> list[str]:
-        """Prefixos de tabelas permitidos, normalmente fact_ e dim_."""
-
-        return [prefix.strip().lower() for prefix in self.dw_table_prefixes.split(",") if prefix.strip()]
-
-    @property
     def resolved_frontend_dir(self) -> Path:
         """Resolve o diretorio do frontend a partir da raiz do projeto."""
 
         frontend_path = Path(self.frontend_dir)
-        if frontend_path.is_absolute():
-            return frontend_path
-        return Path.cwd() / frontend_path
+        resolved = frontend_path if frontend_path.is_absolute() else Path.cwd() / frontend_path
+        vite_dist = resolved / "dist"
+        if (vite_dist / "index.html").exists():
+            return vite_dist
+        return resolved
+
+    def resolve_local_path(self, configured_path: str) -> Path:
+        """Resolve caminhos de persistencia local sem depender do shell atual."""
+
+        path = Path(configured_path)
+        return path if path.is_absolute() else Path.cwd() / path
+
+    @property
+    def resolved_local_config_db_path(self) -> Path:
+        """Resolve o SQLite local usado somente para configuracoes criptografadas."""
+
+        db_path = Path(self.local_config_db_path)
+        if db_path.is_absolute():
+            return db_path
+        return Path.cwd() / db_path
+
+    @property
+    def resolved_knowledge_index_path(self) -> Path:
+        """Resolve o diretorio persistente do indice vetorial local."""
+
+        return self.resolve_local_path(self.knowledge_index_path)
 
     @model_validator(mode="after")
     def validar_seguranca_producao(self) -> "Settings":
@@ -112,12 +120,13 @@ class Settings(BaseSettings):
                 raise ValueError("Com AUTH_ENABLED=true, API_KEY deve conter pelo menos 32 caracteres.")
             if "*" in self.allowed_origins:
                 raise ValueError("Em producao, CORS_ORIGINS nao pode permitir qualquer origem.")
-        if self.admin_enabled and (not self.admin_api_key or len(self.admin_api_key) < 32):
-            raise ValueError("Com ADMIN_ENABLED=true, ADMIN_API_KEY deve conter pelo menos 32 caracteres.")
-        if self.dw_enabled:
-            campos_dw = (self.dw_host, self.dw_database, self.dw_user, self.dw_password)
-            if not all(valor.strip() for valor in campos_dw):
-                raise ValueError("Com DW_ENABLED=true, host, database, user e password sao obrigatorios.")
+        bootstrap_values = (self.bootstrap_admin_email, self.bootstrap_admin_password)
+        if any(bootstrap_values) and not all(bootstrap_values):
+            raise ValueError("BOOTSTRAP_ADMIN_EMAIL e BOOTSTRAP_ADMIN_PASSWORD devem ser definidos juntos.")
+        if self.bootstrap_admin_password and len(self.bootstrap_admin_password) < 12:
+            raise ValueError("BOOTSTRAP_ADMIN_PASSWORD deve conter pelo menos 12 caracteres.")
+        if bool(self.turso_database_url) != bool(self.turso_auth_token):
+            raise ValueError("TURSO_DATABASE_URL e TURSO_AUTH_TOKEN devem ser definidos juntos.")
         return self
 
 
